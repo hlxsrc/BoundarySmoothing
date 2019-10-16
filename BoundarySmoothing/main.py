@@ -35,7 +35,7 @@ class OpenFile(Frame):  # Class to open txt file with GUI
 
     def init_ui(self):  # Define GUI
 
-        self.pack(fill=BOTH, expand=1)
+        # self.pack(fill=BOTH, expand=1)
 
         # Setting menu in top bar
         menu_bar = Menu(self.parent)
@@ -53,11 +53,32 @@ class OpenFile(Frame):  # Class to open txt file with GUI
         menu_bar.add_cascade(label='Help', menu=help_menu)
         help_menu.add_command(label='About')
 
-        # Setting buttons
-        button_graphic = Button(self.parent, text='Show graphic', width=25, command=self.parent.destroy)
-        button_smoothing = Button(self.parent, text='Smoothing', width=25, command=self.parent.destroy)
-        button_graphic.pack()
-        button_smoothing.pack()
+        # To plot
+
+        # Labels
+        Label(self.parent, text="Plot").grid(row=0)
+        Label(self.parent, text="Attribute 1").grid(row=1)
+        Label(self.parent, text="Attribute 2").grid(row=2)
+
+        # Entries
+        attr1 = Entry(self.parent)
+        attr2 = Entry(self.parent)
+
+        attr1.grid(row=1, column=1)
+        attr2.grid(row=2, column=1)
+
+        # Button
+        Button(self.parent, text='Show graphic', width=25,
+               command=self.parent.destroy).grid(row=3, column=1, sticky=W, pady=4)
+
+        # To smoothing
+
+        # Labels
+        Label(self.parent, text="Smoothing").grid(row=4)
+
+        # Button
+        Button(self.parent, text='Smooth Borders', width=25,
+               command=self.parent.destroy).grid(row=4, column=1, sticky=W, pady=4)
 
     def on_open(self):
 
