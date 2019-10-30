@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import filedialog
 import matplotlib.pyplot as plt
 import numpy as np
+from NN import KNN
 
 
 def read_file(file_name):  # Function to read file
@@ -11,7 +12,7 @@ def read_file(file_name):  # Function to read file
     return lines
 
 
-def plot(self, file_name, attr1, attr2): # Function to plot data
+def plot(self, file_name, attr1, attr2):  # Function to plot data
 
     # read the file
     lines = read_file(file_name)
@@ -21,6 +22,7 @@ def plot(self, file_name, attr1, attr2): # Function to plot data
     attr = lines[1].strip()
     classes = lines[2].strip()
 
+    # stores the data after the first 3 rows
     A = np.loadtxt(file_name, skiprows=3, delimiter=',')
 
     # attribute's array
@@ -29,9 +31,10 @@ def plot(self, file_name, attr1, attr2): # Function to plot data
 
     plt.figure()
 
-    # takes values from matrix
+    # takes values from matrix with specific classes
     for i in range(int(classes)):
         for j in range(int(size)):
+            # comparison of classes
             if A[j][int(attr)] == i:
                 list1.append(A[j][attr1])
                 list2.append(A[j][attr2])
@@ -39,10 +42,75 @@ def plot(self, file_name, attr1, attr2): # Function to plot data
         list1.clear()
         list2.clear()
 
-    plt.title("Comparison")
+    plt.title("Comparison before Boundary Softening")
     plt.xlabel("Attribute {}".format(attr1))
     plt.ylabel("Attribute {}".format(attr2))
     plt.show()
+
+
+def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft the decision boundary
+
+    # Create new object
+    nn = KNN(file_name)
+
+    # Load dataset
+    dataset = nn.load_file()
+
+    # Convert attributes column to floats
+    for i in range(len(dataset[0]) - 1):
+        nn.str_column_to_float(dataset, i)
+
+    # Convert class column to integers
+    nn.str_column_to_int(dataset, len(dataset[0]) - 1)
+
+    # Define number of neighbors
+    num_neighbors = 5
+
+    # Defines a new record
+
+    # read the file
+    lines = read_file(file_name)
+
+    # store configuration values
+    size = lines[0].strip()
+    attr = lines[1].strip()
+    classes = lines[2].strip()
+
+    # stores the data after the first 3 rows
+    A = np.loadtxt(file_name, skiprows=3, delimiter=',')
+
+    # list representing the data after the boundary smoothing
+    after_boundary_smoothing = []
+
+    # list representing excluded data
+    excluded_data = []
+
+    # for each row in A predicts the class
+    # if the class from the row's k nearest neighbors is the same
+    # the row will be added to a new list
+    # else the row will be excluded from the new list
+    # this new list is going to represent the data after the softening of the decision boundary
+    for row in A:
+
+        # assign temporal row to delete class from array
+        temp_row = np.delete(row, int(attr))
+
+        # predict the label
+        neighbors = nn.predict_classification(dataset, temp_row, num_neighbors)
+
+        # takes the class from the nearest k neighbors
+        knnClasses = []
+        for neighbor in neighbors:
+            knnClasses.append(neighbor[int(attr)])
+
+        # Finds if the element should or should not be in the new list
+        if all(x == knnClasses[0] for x in knnClasses):
+            after_boundary_smoothing.append(row)
+        else:
+            excluded_data.append(row)
+
+    # print("Length of ABS: ", len(after_boundary_smoothing))
+    # print("Length of ED: ", len(excluded_data))
 
 
 class GUI(Frame):  # Class to open txt file with GUI
@@ -102,7 +170,7 @@ class GUI(Frame):  # Class to open txt file with GUI
 
         # Button
         Button(self.parent, text='Smooth Borders', width=17,
-               command=self.parent.destroy).grid(row=6, column=1, sticky=W, pady=4)
+               command=self.exec_knn).grid(row=6, column=1, sticky=W, pady=4)
 
         Label(self.parent, text=" ").grid(row=7)
 
@@ -132,6 +200,11 @@ class GUI(Frame):  # Class to open txt file with GUI
     def set_value(self, x, fn):
         self.parent.file_name = fn
 
+    def exec_knn(self):
+        file_name = self.parent.file_name
+        attr1 = self.parent.e1.get()
+        attr2 = self.parent.e2.get()
+        knn(file_name, attr1, attr2)
 
 
 def main():  # Main Program
