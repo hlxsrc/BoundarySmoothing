@@ -112,6 +112,26 @@ def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft
     # print("Length of ABS: ", len(after_boundary_smoothing))
     # print("Length of ED: ", len(excluded_data))
 
+    # attribute's array
+    list1 = []
+    list2 = []
+
+    # takes values from matrix with specific classes
+    for i in range(int(classes)):
+        for row in after_boundary_smoothing:
+            # comparison of classes
+            if row[int(attr)] == i:
+                list1.append(row[int(attr1)])
+                list2.append(row[int(attr2)])
+        plt.scatter(list1, list2, marker='o')
+        list1.clear()
+        list2.clear()
+
+    plt.title("Comparison after Boundary Softening")
+    plt.xlabel("Attribute {}".format(attr1))
+    plt.ylabel("Attribute {}".format(attr2))
+    plt.show()
+
 
 class GUI(Frame):  # Class to open txt file with GUI
 
