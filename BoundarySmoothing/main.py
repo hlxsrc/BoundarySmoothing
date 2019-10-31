@@ -48,7 +48,7 @@ def plot(self, file_name, attr1, attr2):  # Function to plot data
     plt.show()
 
 
-def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft the decision boundary
+def knn(file_name, attr1, attr2, num_neighbors):  # executes the knn algorithm in order to soft the decision boundary
 
     # Create new object
     nn = KNN(file_name)
@@ -62,9 +62,6 @@ def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft
 
     # Convert class column to integers
     nn.str_column_to_int(dataset, len(dataset[0]) - 1)
-
-    # Define number of neighbors
-    num_neighbors = 5
 
     # Defines a new record
 
@@ -96,7 +93,7 @@ def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft
         temp_row = np.delete(row, int(attr))
 
         # predict the label
-        neighbors = nn.predict_classification(dataset, temp_row, num_neighbors)
+        neighbors = nn.predict_classification(dataset, temp_row, int(num_neighbors))
 
         # takes the class from the nearest k neighbors
         knnClasses = []
@@ -109,8 +106,8 @@ def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft
         else:
             excluded_data.append(row)
 
-    # print("Length of ABS: ", len(after_boundary_smoothing))
-    # print("Length of ED: ", len(excluded_data))
+    print("Length of ABS: ", len(after_boundary_smoothing))
+    print("Length of ED: ", len(excluded_data))
 
     # attribute's array
     list1 = []
@@ -127,7 +124,7 @@ def knn(file_name, attr1, attr2):  # executes the knn algorithm in order to soft
         list1.clear()
         list2.clear()
 
-    plt.title("Comparison after Boundary Softening")
+    plt.title("After Boundary Softening w/{} neighbors ".format(num_neighbors))
     plt.xlabel("Attribute {}".format(attr1))
     plt.ylabel("Attribute {}".format(attr2))
     plt.show()
@@ -174,9 +171,6 @@ class GUI(Frame):  # Class to open txt file with GUI
         self.parent.e1.grid(row=1, column=1, sticky=W)
         self.parent.e2.grid(row=2, column=1, sticky=W)
 
-        a1 = self.parent.e1.get()
-        a2 = self.parent.e2.get()
-
         # Button
         Button(self.parent, text='Show graphic', width=17,
                command=self.get_values).grid(row=3, column=1, sticky=W, pady=4)
@@ -187,21 +181,27 @@ class GUI(Frame):  # Class to open txt file with GUI
 
         # Labels
         Label(self.parent, text="Smoothing:").grid(row=5)
+        Label(self.parent, text="# Neighbors:").grid(row=6)
+
+        # Entries
+        self.parent.e3 = Entry(self.parent)
+
+        self.parent.e3.grid(row=6, column=1, sticky=W)
 
         # Button
         Button(self.parent, text='Smooth Borders', width=17,
-               command=self.exec_knn).grid(row=6, column=1, sticky=W, pady=4)
+               command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
 
-        Label(self.parent, text=" ").grid(row=7)
+        Label(self.parent, text=" ").grid(row=8)
 
         # Quit
 
         # Label
-        Label(self.parent, text="Quit:").grid(row=8)
+        Label(self.parent, text="Quit:").grid(row=9)
 
         # Button
         Button(self.parent, text='Exit', width=17,
-               command=self.parent.destroy).grid(row=9, column=1, sticky=W, pady=4)
+               command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
 
     def open_file(self):
         file_types = [('Text files', '*.txt'), ('All files', '*')]
@@ -224,7 +224,8 @@ class GUI(Frame):  # Class to open txt file with GUI
         file_name = self.parent.file_name
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
-        knn(file_name, attr1, attr2)
+        num_neighbors = self.parent.e3.get()
+        knn(file_name, attr1, attr2, num_neighbors)
 
 
 def main():  # Main Program
