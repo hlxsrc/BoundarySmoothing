@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import subprocess
 from NN import KNN
+from NN import np_to_list
 
 
 # Function to read file
@@ -12,6 +13,18 @@ def read_file(file_name):
     f = open(file_name, "r")
     lines = f.readlines()
     return lines
+
+
+# Function to give format to the rows that will be written in file
+def list_to_string(new_list):
+    new_string = ""
+    for attr in new_list:
+        if attr == new_list[-1]:
+            new_string += str(int(attr)) + "\n"
+        else:
+            new_string += str(attr) + ","
+
+    return new_string
 
 
 # Function to find the most frequent class
@@ -132,7 +145,8 @@ def knn(file_name, attr1, attr2, num_neighbors):
 
         # Finds if the element should or should not be in the new list
         if all(x == knnClasses[0] for x in knnClasses):
-            after_boundary_smoothing.append(row)
+            new_row = np_to_list(row)
+            after_boundary_smoothing.append(new_row)
         else:
             excluded_data.append(row)
 
@@ -252,12 +266,12 @@ class GUI(Frame):
 
     # Function to save a file using File Dialog
     def save_file(self):
-        f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+        f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
         if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
             return
         data_to_save = self.parent.new_data
         for row in data_to_save:
-            new_string = np.array_str(row) + "\n"
+            new_string = list_to_string(row)
             f.write(new_string)
         f.close()
 
