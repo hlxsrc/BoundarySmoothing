@@ -6,14 +6,17 @@ import subprocess
 from NN import KNN
 
 
-def read_file(file_name):  # Function to read file
+# Function to read file
+def read_file(file_name):
 
     f = open(file_name, "r")
     lines = f.readlines()
     return lines
 
 
+# Function to find the most frequent class
 def most_frequent(l):
+
     counter = 0
     num = l[0]
 
@@ -26,6 +29,7 @@ def most_frequent(l):
     return num
 
 
+# Function to find the majority of neighbors
 def majority(neighbors, attr):
 
     # takes the class from the nearest k neighbors
@@ -33,13 +37,14 @@ def majority(neighbors, attr):
     for neighbor in neighbors:
         knn_classes.append(neighbor[int(attr)])
 
-    print("NEIGHBORS: ", knn_classes)
+    # print("NEIGHBORS: ", knn_classes)
     result = most_frequent(knn_classes)
 
     return result
 
 
-def plot(self, file_name, attr1, attr2):  # Function to plot data
+# Function to plot original data
+def plot(self, file_name, attr1, attr2):
 
     # read the file
     lines = read_file(file_name)
@@ -75,7 +80,8 @@ def plot(self, file_name, attr1, attr2):  # Function to plot data
     plt.show()
 
 
-def knn(file_name, attr1, attr2, num_neighbors):  # executes the knn algorithm in order to soft the decision boundary
+# executes the knn algorithm in order to soften the decision boundary
+def knn(file_name, attr1, attr2, num_neighbors):
 
     # Create new object
     nn = KNN(file_name)
@@ -144,19 +150,23 @@ def knn(file_name, attr1, attr2, num_neighbors):  # executes the knn algorithm i
             if row[int(attr)] == i:
                 list1.append(row[int(attr1)])
                 list2.append(row[int(attr2)])
+        # plot new data
         plt.scatter(list1, list2, marker='o')
         list1.clear()
         list2.clear()
 
+    # add details to new plotted data
     plt.title("After Boundary Softening w/{} neighbors ".format(num_neighbors))
     plt.xlabel("Attribute {}".format(attr1))
     plt.ylabel("Attribute {}".format(attr2))
     plt.show()
 
+    # returns data after boundary smoothing so it can be written to a new file
     return after_boundary_smoothing
 
 
-class GUI(Frame):  # Class to open txt file with GUI
+# Class to open txt file with GUI
+class GUI(Frame):
 
     def __init__(self, parent):
 
@@ -165,7 +175,8 @@ class GUI(Frame):  # Class to open txt file with GUI
         self.parent = parent
         self.init_ui()
 
-    def init_ui(self):  # Define GUI
+    # Define GUI
+    def init_ui(self):
 
         # Setting menu in top bar
         menu_bar = Menu(self.parent)
@@ -190,52 +201,47 @@ class GUI(Frame):  # Class to open txt file with GUI
         menu_bar.add_cascade(label='Help', menu=help_menu)
         help_menu.add_command(label='About')
 
-        # To plot
-
-        # Labels
+        # Plot Labels
         Label(self.parent, text="Plot: ").grid(row=0)
         Label(self.parent, text="Attribute 1").grid(row=1)
         Label(self.parent, text="Attribute 2").grid(row=2)
 
-        # Entries
+        # Plot Entries
         self.parent.e1 = Entry(self.parent)
         self.parent.e2 = Entry(self.parent)
-
         self.parent.e1.grid(row=1, column=1, sticky=W)
         self.parent.e2.grid(row=2, column=1, sticky=W)
 
-        # Button
+        # Plot Button
         Button(self.parent, text='Show graphic', width=17,
                command=self.get_values).grid(row=3, column=1, sticky=W, pady=4)
 
+        # Separator
         Label(self.parent, text=" ").grid(row=4)
 
-        # To smoothing
-
-        # Labels
+        # Smoothing Labels
         Label(self.parent, text="Smoothing:").grid(row=5)
         Label(self.parent, text="# Neighbors:").grid(row=6)
 
-        # Entries
+        # Smoothing Entries
         self.parent.e3 = Entry(self.parent)
-
         self.parent.e3.grid(row=6, column=1, sticky=W)
 
-        # Button
+        # Smoothing Button
         Button(self.parent, text='Smooth Borders', width=17,
                command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
 
+        # Separator
         Label(self.parent, text=" ").grid(row=8)
 
-        # Quit
-
-        # Label
+        # Quit Label
         Label(self.parent, text="Quit:").grid(row=9)
 
-        # Button
+        # Quit Button
         Button(self.parent, text='Exit', width=17,
                command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
 
+    # Function to open a file using File Dialog
     def open_file(self):
         file_types = [('Text files', '*.txt'), ('All files', '*')]
         dlg = filedialog.Open(filetypes=file_types)
@@ -244,6 +250,7 @@ class GUI(Frame):  # Class to open txt file with GUI
         if fl != '':
             self.set_value(self, fl)
 
+    # Function to save a file using File Dialog
     def save_file(self):
         f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
         if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
@@ -252,33 +259,39 @@ class GUI(Frame):  # Class to open txt file with GUI
         for row in text2save:
             new_string = np.array_str(row) + "\n"
             f.write(new_string)
-        f.close()  # `()` was missing.
+        f.close()
 
+    # Get values to plot original file
     def get_values(self):
         file_name = self.parent.file_name
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
         plot(self, file_name, int(attr1), int(attr2))
 
+    # Set file name value
     def set_value(self, x, fn):
         self.parent.file_name = fn
 
-    def set_file(self, file):
-        self.parent.file2save = file
+    # Set new data array which will be stored in a new file
+    def set_new_data(self, data):
+        self.parent.new_data = data
 
+    # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
         file_name = self.parent.file_name
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
         num_neighbors = self.parent.e3.get()
-        save2file = knn(file_name, attr1, attr2, num_neighbors)
-        self.set_file(save2file)
+        new_data = knn(file_name, attr1, attr2, num_neighbors)
+        self.set_new_data(new_data)
 
+    # Function to open weka.jar file
     def open_weka(self):
         subprocess.Popen(['java', '-jar', '/home/hlxs/Downloads/weka-3-8-3/weka.jar'])
 
 
-def main():  # Main Program
+# Main Program
+def main():
 
     # Setting root
     root = Tk()
