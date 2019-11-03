@@ -12,6 +12,33 @@ def read_file(file_name):  # Function to read file
     return lines
 
 
+def most_frequent(l):
+
+    counter = 0
+    num = l[0]
+
+    for i in l:
+        curr_frequency = l.count(i)
+        if curr_frequency > counter:
+            counter = curr_frequency
+            num = i
+
+    return num
+
+
+def majority(neighbors, attr):
+
+    # takes the class from the nearest k neighbors
+    knn_classes = []
+    for neighbor in neighbors:
+        knn_classes.append(neighbor[int(attr)])
+
+    print("NEIGHBORS: ", knn_classes)
+    result = most_frequent(knn_classes)
+
+    return result
+
+
 def plot(self, file_name, attr1, attr2):  # Function to plot data
 
     # read the file
@@ -56,13 +83,6 @@ def knn(file_name, attr1, attr2, num_neighbors):  # executes the knn algorithm i
     # Load dataset
     dataset = nn.load_file()
 
-    # Convert attributes column to floats
-    for i in range(len(dataset[0]) - 1):
-        nn.str_column_to_float(dataset, i)
-
-    # Convert class column to integers
-    nn.str_column_to_int(dataset, len(dataset[0]) - 1)
-
     # Defines a new record
 
     # read the file
@@ -89,11 +109,15 @@ def knn(file_name, attr1, attr2, num_neighbors):  # executes the knn algorithm i
     # this new list is going to represent the data after the softening of the decision boundary
     for row in A:
 
-        # assign temporal row to delete class from array
-        temp_row = np.delete(row, int(attr))
-
         # predict the label
-        neighbors = nn.predict_classification(dataset, temp_row, int(num_neighbors))
+        neighbors = nn.predict_classification(dataset, row, int(num_neighbors))
+
+        # prediction = majority(neighbors, attr)
+        #
+        # if int(prediction) == int(row[int(attr)]):
+        #     after_boundary_smoothing.append(row)
+        # else:
+        #     excluded_data.append(row)
 
         # takes the class from the nearest k neighbors
         knnClasses = []
@@ -129,6 +153,8 @@ def knn(file_name, attr1, attr2, num_neighbors):  # executes the knn algorithm i
     plt.ylabel("Attribute {}".format(attr2))
     plt.show()
 
+    return after_boundary_smoothing
+
 
 class GUI(Frame):  # Class to open txt file with GUI
 
@@ -149,6 +175,8 @@ class GUI(Frame):  # Class to open txt file with GUI
         file_menu = Menu(menu_bar)
         menu_bar.add_cascade(label='File', menu=file_menu)
         file_menu.add_command(label='Open...', command=self.open_file)
+        file_menu.add_separator()
+        file_menu.add_command(label='Save As', command=self.save_file)
         file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.parent.quit)
 
@@ -211,6 +239,16 @@ class GUI(Frame):  # Class to open txt file with GUI
         if fl != '':
             self.set_value(self, fl)
 
+    def save_file(self):
+        f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+        text2save = self.parent.file2save
+        for row in text2save:
+            new_string = np.array_str(row) + "\n"
+            f.write(new_string)
+        f.close()  # `()` was missing.
+
     def get_values(self):
         file_name = self.parent.file_name
         attr1 = self.parent.e1.get()
@@ -220,12 +258,16 @@ class GUI(Frame):  # Class to open txt file with GUI
     def set_value(self, x, fn):
         self.parent.file_name = fn
 
+    def set_file(self, file):
+        self.parent.file2save = file
+
     def exec_knn(self):
         file_name = self.parent.file_name
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
         num_neighbors = self.parent.e3.get()
-        knn(file_name, attr1, attr2, num_neighbors)
+        save2file = knn(file_name, attr1, attr2, num_neighbors)
+        self.set_file(save2file)
 
 
 def main():  # Main Program
