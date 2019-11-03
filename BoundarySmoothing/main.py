@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import filedialog
 import matplotlib.pyplot as plt
 import numpy as np
+import subprocess
 from NN import KNN
 
 
@@ -13,7 +14,6 @@ def read_file(file_name):  # Function to read file
 
 
 def most_frequent(l):
-
     counter = 0
     num = l[0]
 
@@ -180,6 +180,11 @@ class GUI(Frame):  # Class to open txt file with GUI
         file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.parent.quit)
 
+        # Setting Tools menu
+        tools_menu = Menu(menu_bar)
+        menu_bar.add_cascade(label='Tools', menu=tools_menu)
+        tools_menu.add_command(label='Weka', command=self.open_weka)
+
         # Setting Help menu
         help_menu = Menu(menu_bar)
         menu_bar.add_cascade(label='Help', menu=help_menu)
@@ -268,6 +273,9 @@ class GUI(Frame):  # Class to open txt file with GUI
         num_neighbors = self.parent.e3.get()
         save2file = knn(file_name, attr1, attr2, num_neighbors)
         self.set_file(save2file)
+
+    def open_weka(self):
+        subprocess.Popen(['java', '-jar', '/home/hlxs/Downloads/weka-3-8-3/weka.jar'])
 
 
 def main():  # Main Program
