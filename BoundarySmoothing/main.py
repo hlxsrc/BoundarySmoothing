@@ -255,8 +255,8 @@ class GUI(Frame):
         f = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
         if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
             return
-        text2save = self.parent.file2save
-        for row in text2save:
+        data_to_save = self.parent.new_data
+        for row in data_to_save:
             new_string = np.array_str(row) + "\n"
             f.write(new_string)
         f.close()

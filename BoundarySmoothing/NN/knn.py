@@ -1,41 +1,26 @@
-# This k-NN algorithm has been implemented by Jason Brownlee
-# Taken from: Develop k-Nearest Neighbors in Python From Scratch,
-#             Machine Learning Mastery
+# This k-NN algorithm is based on the work implemented by Jason Brownlee
+# The code below has been adapted in order to soften the decision boundary
+
+# Original work taken from: Develop k-Nearest Neighbors in Python From Scratch,
+#                           Machine Learning Mastery
 # URL: https://machinelearningmastery.com/tutorial-to-implement-k-nearest-neighbors-in-python-from-scratch/
 
 from csv import reader
 from math import sqrt
 
 
-def refactor(l):
+# from numpy array to list
+def np_to_list(l):
     new_list = []
     for attr in l:
         new_list.append(float(attr))
     return new_list
 
 
-# Find the min and max values for each column
-def dataset_minmax(dataset):
-    minmax = list()
-    for i in range(len(dataset[0])):
-        col_values = [row[i] for row in dataset]
-        value_min = min(col_values)
-        value_max = max(col_values)
-        minmax.append([value_min, value_max])
-    return minmax
-
-
-# Rescale dataset columns to the range 0-1
-def normalize_dataset(dataset, minmax):
-    for row in dataset:
-        for i in range(len(row)):
-            row[i] = (row[i] - minmax[i][0]) / (minmax[i][1] - minmax[i][0])
-
-
 # Calculate the Euclidean distance between two vectors
 def euclidean_distance(row1, row2):
-    temp_row1 = refactor(row1)
-    temp_row2 = refactor(row2)
+    temp_row1 = np_to_list(row1)
+    temp_row2 = np_to_list(row2)
     # print("temp ROW1: ", temp_row1)
     # print("temp ROW2: ", temp_row2)
     distance = 0.0
@@ -85,20 +70,3 @@ class KNN:
         output_values = [row[-1] for row in neighbors]
         prediction = max(set(output_values), key=output_values.count)
         return neighbors
-
-    # Convert string column to float
-    def str_column_to_float(self, dataset, column):
-        for row in dataset:
-            row[column] = float(row[column].strip())
-
-    # Convert string column to integer
-    def str_column_to_int(self, dataset, column):
-        class_values = [row[column] for row in dataset]
-        unique = set(class_values)
-        lookup = dict()
-        for i, value in enumerate(unique):
-            lookup[value] = i
-            # print('[%s] => %d' % (value, i))
-        for row in dataset:
-            row[column] = lookup[row[column]]
-        return lookup
