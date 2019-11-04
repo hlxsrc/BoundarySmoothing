@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
+import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import numpy as np
 import subprocess
@@ -217,6 +218,15 @@ class GUI(Frame):
         menu_bar.add_cascade(label='Help', menu=help_menu)
         help_menu.add_command(label='About')
 
+        # Text output
+        self.parent.output = Text(self.parent)
+        self.parent.output.grid(row=0, column=2, rowspan=10, sticky=W+E+N+S, padx=5, pady=5)
+
+        # create a Scrollbar and associate it with output
+        scroll_b = ttk.Scrollbar(self.parent, command=self.parent.output.yview)
+        scroll_b.grid(row=0, column=3, rowspan=10, sticky=W+E+N+S)
+        self.parent.output['yscrollcommand'] = scroll_b.set
+
         # Plot Labels
         Label(self.parent, text="Plot: ").grid(row=0)
         Label(self.parent, text="Attribute 1").grid(row=1)
@@ -244,18 +254,39 @@ class GUI(Frame):
         self.parent.e3.grid(row=6, column=1, sticky=W)
 
         # Smoothing Button
-        Button(self.parent, text='Smooth Borders', width=17,
+        Button(self.parent, text='Smooth Boundary', width=17,
                command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
 
         # Separator
-        Label(self.parent, text=" ").grid(row=8)
-
-        # Quit Label
-        Label(self.parent, text="Quit:").grid(row=9)
+        # Label(self.parent, text=" ").grid(row=8)
 
         # Quit Button
-        Button(self.parent, text='Exit', width=17,
-               command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
+        # Button(self.parent, text='Exit', width=17,
+        #       command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
+
+    # Text to output
+    def text_output(self):
+        # File loaded
+        self.parent.output.insert(INSERT, 'File loaded... \n\n')
+
+        # Set name of the file
+        path = self.parent.file_name
+        path_arr = path.split('/')
+        name = path_arr[len(path_arr) - 1]
+        self.parent.output.insert(INSERT, 'Name: ' + name + '\n\n')
+
+        # Open file to get info
+        file = read_file(self.parent.file_name)
+        size = file[0].strip()
+        attr = file[1].strip()
+        classes = file[2].strip()
+
+        # Insert file info
+        self.parent.output.insert(INSERT, 'Size: ' + size + '\n')
+        self.parent.output.insert(INSERT, 'Attributes: ' + attr + '\n')
+        self.parent.output.insert(INSERT, 'Classes: ' + classes + '\n')
+
+        self.set_num_of_attr(attr)
 
     # Set file name value
     def set_file_name(self, x, fn):
@@ -275,7 +306,6 @@ class GUI(Frame):
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
         num = plot(self, file_name, int(attr1), int(attr2))
-        self.set_num_of_attr(num)
 
     # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
@@ -298,6 +328,7 @@ class GUI(Frame):
 
         if fl != '':
             self.set_file_name(self, fl)
+            self.text_output()
 
     # Function to save a file using File Dialog
     def save_file(self):
