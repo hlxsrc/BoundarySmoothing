@@ -264,8 +264,8 @@ class GUI(Frame):
         # Button(self.parent, text='Exit', width=17,
         #       command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
 
-    # Text to output
-    def text_output(self):
+    # Show file has been loaded correctly
+    def file_loaded(self):
         # File loaded
         self.parent.output.insert(INSERT, 'File loaded... \n\n')
 
@@ -284,17 +284,33 @@ class GUI(Frame):
         # Insert file info
         self.parent.output.insert(INSERT, 'Size: ' + size + '\n')
         self.parent.output.insert(INSERT, 'Attributes: ' + attr + '\n')
-        self.parent.output.insert(INSERT, 'Classes: ' + classes + '\n')
+        self.parent.output.insert(INSERT, 'Classes: ' + classes + '\n\n')
 
         self.set_num_of_attr(attr)
+        self.set_dataset_size(size)
+
+    def smooth_done(self):
+        # Task done
+        self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + self.parent.e3.get() + ' Neighbors Completed.\n')
+        self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.parent.new_dataset_size) + '\n')
+        excluded_data = int(self.parent.dataset_size) - int(self.parent.new_dataset_size)
+        self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n')
 
     # Set file name value
     def set_file_name(self, x, fn):
         self.parent.file_name = fn
 
-    # Set file name value
+    # Set number of attributes value
     def set_num_of_attr(self, num):
         self.parent.num_of_attributes = num
+
+    # Set dataset size value
+    def set_dataset_size(self, num):
+        self.parent.dataset_size = num
+
+    # Set new dataset size value
+    def set_new_dataset_size(self, num):
+        self.parent.new_dataset_size = num
 
     # Set new data array which will be stored in a new file
     def set_new_data(self, data):
@@ -305,7 +321,7 @@ class GUI(Frame):
         file_name = self.parent.file_name
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
-        num = plot(self, file_name, int(attr1), int(attr2))
+        plot(self, file_name, int(attr1), int(attr2))
 
     # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
@@ -314,6 +330,9 @@ class GUI(Frame):
         attr2 = self.parent.e2.get()
         num_neighbors = self.parent.e3.get()
         new_data = knn(file_name, attr1, attr2, num_neighbors)
+        if new_data != 0:
+            self.set_new_dataset_size(len(new_data))
+            self.smooth_done()
         self.set_new_data(new_data)
 
     # Function to open weka.jar file
@@ -328,7 +347,7 @@ class GUI(Frame):
 
         if fl != '':
             self.set_file_name(self, fl)
-            self.text_output()
+            self.file_loaded()
 
     # Function to save a file using File Dialog
     def save_file(self):
