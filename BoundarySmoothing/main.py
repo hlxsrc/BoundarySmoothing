@@ -92,6 +92,8 @@ def plot(self, file_name, attr1, attr2):
     plt.ylabel("Attribute {}".format(attr2))
     plt.show()
 
+    return attr
+
 
 # executes the knn algorithm in order to soften the decision boundary
 def knn(file_name, attr1, attr2, num_neighbors):
@@ -139,12 +141,12 @@ def knn(file_name, attr1, attr2, num_neighbors):
         #     excluded_data.append(row)
 
         # takes the class from the nearest k neighbors
-        knnClasses = []
+        knn_classes = []
         for neighbor in neighbors:
-            knnClasses.append(neighbor[int(attr)])
+            knn_classes.append(neighbor[int(attr)])
 
         # Finds if the element should or should not be in the new list
-        if all(x == knnClasses[0] for x in knnClasses):
+        if all(x == knn_classes[0] for x in knn_classes):
             new_row = np_to_list(row)
             after_boundary_smoothing.append(new_row)
         else:
@@ -228,7 +230,7 @@ class GUI(Frame):
 
         # Plot Button
         Button(self.parent, text='Show graphic', width=17,
-               command=self.get_values).grid(row=3, column=1, sticky=W, pady=4)
+               command=self.plot).grid(row=3, column=1, sticky=W, pady=4)
 
         # Separator
         Label(self.parent, text=" ").grid(row=4)
@@ -255,40 +257,25 @@ class GUI(Frame):
         Button(self.parent, text='Exit', width=17,
                command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
 
-    # Function to open a file using File Dialog
-    def open_file(self):
-        file_types = [('Text files', '*.txt'), ('All files', '*')]
-        dlg = filedialog.Open(filetypes=file_types)
-        fl = dlg.show()
-
-        if fl != '':
-            self.set_value(self, fl)
-
-    # Function to save a file using File Dialog
-    def save_file(self):
-        f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
-        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
-            return
-        data_to_save = self.parent.new_data
-        for row in data_to_save:
-            new_string = list_to_string(row)
-            f.write(new_string)
-        f.close()
-
-    # Get values to plot original file
-    def get_values(self):
-        file_name = self.parent.file_name
-        attr1 = self.parent.e1.get()
-        attr2 = self.parent.e2.get()
-        plot(self, file_name, int(attr1), int(attr2))
+    # Set file name value
+    def set_file_name(self, x, fn):
+        self.parent.file_name = fn
 
     # Set file name value
-    def set_value(self, x, fn):
-        self.parent.file_name = fn
+    def set_num_of_attr(self, num):
+        self.parent.num_of_attributes = num
 
     # Set new data array which will be stored in a new file
     def set_new_data(self, data):
         self.parent.new_data = data
+
+    # Get values to plot original file
+    def plot(self):
+        file_name = self.parent.file_name
+        attr1 = self.parent.e1.get()
+        attr2 = self.parent.e2.get()
+        num = plot(self, file_name, int(attr1), int(attr2))
+        self.set_num_of_attr(num)
 
     # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
@@ -302,6 +289,45 @@ class GUI(Frame):
     # Function to open weka.jar file
     def open_weka(self):
         subprocess.Popen(['java', '-jar', '/home/hlxs/Downloads/weka-3-8-3/weka.jar'])
+
+    # Function to open a file using File Dialog
+    def open_file(self):
+        file_types = [('Text files', '*.txt'), ('All files', '*')]
+        dlg = filedialog.Open(filetypes=file_types)
+        fl = dlg.show()
+
+        if fl != '':
+            self.set_file_name(self, fl)
+
+    # Function to save a file using File Dialog
+    def save_file(self):
+        f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
+        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+
+        # Get and write RELATION to file
+        path = self.parent.file_name
+        path_arr = path.split('/')
+        name_arr = path_arr[len(path_arr)-1].split('.')
+        name = name_arr[0]
+        relation = '@RELATION ' + name + '\n\n'
+        f.write(relation)
+
+        # Get and write ATTRIBUTES to file
+        num = self.parent.num_of_attributes
+        for i in range(int(num)):
+            attribute = '@ATTRIBUTE ' + str(i) + ' REAL' + '\n'
+            f.write(attribute)
+        f.write('\n')
+
+        # Get and write DATA to file
+        data = '@DATA\n'
+        f.write(data)
+        data_to_save = self.parent.new_data
+        for row in data_to_save:
+            new_string = list_to_string(row)
+            f.write(new_string)
+        f.close()
 
 
 # Main Program
