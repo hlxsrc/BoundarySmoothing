@@ -19,11 +19,12 @@ def read_file(file_name):
 # Function to give format to the rows that will be written in file
 def list_to_string(new_list):
     new_string = ""
-    for attr in new_list:
-        if attr == new_list[-1]:
-            new_string += str(int(attr)) + "\n"
+    print(len(new_list))
+    for i in range(len(new_list)):
+        if i == len(new_list)-1:
+            new_string += str(int(new_list[i])) + "\n"
         else:
-            new_string += str(attr) + ","
+            new_string += str(new_list[i]) + ","
 
     return new_string
 
@@ -134,27 +135,29 @@ def knn(file_name, attr1, attr2, num_neighbors):
         # predict the label
         neighbors = nn.predict_classification(dataset, row, int(num_neighbors))
 
-        # prediction = majority(neighbors, attr)
-        #
-        # if int(prediction) == int(row[int(attr)]):
-        #     after_boundary_smoothing.append(row)
-        # else:
-        #     excluded_data.append(row)
+        # 1. Takes the majority of the neighbors
+        prediction = majority(neighbors, attr)
 
-        # takes the class from the nearest k neighbors
-        knn_classes = []
-        for neighbor in neighbors:
-            knn_classes.append(neighbor[int(attr)])
-
-        # Finds if the element should or should not be in the new list
-        if all(x == knn_classes[0] for x in knn_classes):
-            new_row = np_to_list(row)
-            after_boundary_smoothing.append(new_row)
+        if int(prediction) == int(row[int(attr)]):
+            after_boundary_smoothing.append(row)
         else:
             excluded_data.append(row)
 
-    print("Length of ABS: ", len(after_boundary_smoothing))
-    print("Length of ED: ", len(excluded_data))
+        # 2. All neighbors must have the same class
+        # takes the class from the nearest k neighbors
+        # knn_classes = []
+        # for neighbor in neighbors:
+        #     knn_classes.append(neighbor[int(attr)])
+        #
+        # # Finds if the element should or should not be in the new list
+        # if all(x == knn_classes[0] for x in knn_classes):
+        #     new_row = np_to_list(row)
+        #     after_boundary_smoothing.append(new_row)
+        # else:
+        #     excluded_data.append(row)
+
+    # print("Length of ABS: ", len(after_boundary_smoothing))
+    # print("Length of ED: ", len(excluded_data))
 
     # attribute's array
     list1 = []
@@ -229,8 +232,8 @@ class GUI(Frame):
 
         # Plot Labels
         Label(self.parent, text="Plot: ").grid(row=0)
-        Label(self.parent, text="Attribute 1").grid(row=1)
-        Label(self.parent, text="Attribute 2").grid(row=2)
+        Label(self.parent, text="Attribute ").grid(row=1)
+        Label(self.parent, text="Attribute ").grid(row=2)
 
         # Plot Entries
         self.parent.e1 = Entry(self.parent)
@@ -374,7 +377,9 @@ class GUI(Frame):
         data = '@DATA\n'
         f.write(data)
         data_to_save = self.parent.new_data
+        i=0
         for row in data_to_save:
+            i = i + 1
             new_string = list_to_string(row)
             f.write(new_string)
         f.close()
