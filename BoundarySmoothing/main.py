@@ -5,7 +5,13 @@ from tkinter import filedialog
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import numpy as np
+# Import Gaussian Naive Bayes model
+from sklearn.naive_bayes import GaussianNB
+# Import scikit-learn metrics module for accuracy calculation
+from sklearn import metrics
+# Import KNN from NN
 from NN import KNN
+# Import function numpy array to list from NN
 from NN import np_to_list
 
 
@@ -186,6 +192,20 @@ def knn(file_name, attr1, attr2, num_neighbors):
     return after_boundary_smoothing
 
 
+def naive_bayes(x_train, x_test, y_train, y_test):
+    # Create a Gaussian Classifier
+    gnb = GaussianNB()
+
+    # Train the model using the training sets
+    gnb.fit(x_train, y_train)
+
+    # Predict the response for test dataset
+    y_pred = gnb.predict(x_test)
+
+    # returns model Accuracy, how often is the classifier correct?
+    return metrics.accuracy_score(y_test, y_pred)
+
+
 # Class to open txt file with GUI
 class GUI(Frame):
 
@@ -283,14 +303,14 @@ class GUI(Frame):
         self.parent.v = IntVar()
 
         # Classifiers' radiobutton
-        Radiobutton(self.parent, text="Bayes", padx=20, variable=self.parent.v, value=1)\
+        Radiobutton(self.parent, text="Naive Bayes", padx=20, variable=self.parent.v, value=1)\
             .grid(row=13, column=1, sticky=W, pady=4)
         Radiobutton(self.parent, text="ANN", padx=20, variable=self.parent.v, value=2)\
             .grid(row=14, column=1, sticky=W, pady=4)
 
         # Classify Button
         Button(self.parent, text='Classify', width=17,
-               command=self.parent.destroy).grid(row=15, column=1, sticky=W+E+N+S, pady=4)
+               command=self.radio_choice).grid(row=15, column=1, sticky=W+E+N+S, pady=4)
 
     # Set file name value
     def set_file_name(self, x, fn):
@@ -310,11 +330,15 @@ class GUI(Frame):
 
     # Set new data array which will be stored in a new file
     def set_new_dataset(self, data):
-        self.parent.new_data = data
+        self.parent.new_dataset = data
 
     # Set new dataset size value
     def set_new_dataset_size(self, num):
         self.parent.new_dataset_size = num
+
+    # Set test partition
+    def set_test(self, data):
+        self.parent.test = data
 
     # Function to open a file using File Dialog
     def open_file(self):
@@ -355,7 +379,7 @@ class GUI(Frame):
 
     # Function to save a file
     def save_file(self):
-        self.change_to_arff(self.parent.new_data, FALSE)
+        self.change_to_arff(self.parent.new_dataset, FALSE)
 
     #
     def txt_to_arff(self):
@@ -435,8 +459,9 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + self.parent.e3.get() + ' Neighbors Completed.\n')
         self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.parent.new_dataset_size) + '\n')
         excluded_data = int(self.parent.dataset_size) - int(self.parent.new_dataset_size)
-        self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n')
+        self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n\n')
 
+    # Create test partition for classifiers with size 1/4 from original size of dataset
     def create_test_partition(self):
         data = self.parent.dataset
         data.pop(0)
@@ -444,6 +469,61 @@ class GUI(Frame):
         data.pop(0)
         test_size = len(data) / 4
         test = random.choices(data, k=int(test_size))
+        self.set_test(test)
+        self.parent.output.insert(INSERT, 'Test partition created.\n\n')
+
+    # get choice from radio button
+    def radio_choice(self):
+
+        choice = self.parent.v.get()
+
+        if choice == 1:
+            self.naive_bayes_classifier()
+        else:
+            self.ann_classifier()
+
+    def naive_bayes_classifier(self):
+
+        x_train_original = []
+        y_train_original = []
+        # train data to float
+        train_original = self.parent.dataset
+        for row in train_original:
+            np_row = np.fromstring(row, float, int(self.parent.num_of_attributes), ',')
+            x_train_original.append(np_row)
+            string = row.split(',')
+            y_train_original.append(int(string[int(self.parent.num_of_attributes)]))
+
+        x_train_soften = []
+        y_train_soften = []
+        # train data to float
+        train_soften = np.asarray(self.parent.new_dataset)
+        for row in train_soften:
+            x_train_soften.append(np.delete(row, int(self.parent.num_of_attributes)))
+            y_train_soften.append(int(row.item(int(self.parent.num_of_attributes))))
+
+        x_train_soften = np.asarray(x_train_soften)
+
+        x_test = []
+        y_test = []
+        # test data to float
+        test = self.parent.test
+        for row in test:
+            np_row = np.fromstring(row, float, int(self.parent.num_of_attributes), ',')
+            x_test.append(np_row)
+            string = row.split(',')
+            y_test.append(int(string[int(self.parent.num_of_attributes)]))
+
+        acc = naive_bayes(x_train_original, x_test, y_train_original, y_test)
+        self.parent.output.insert(INSERT, 'Original dataset\n')
+        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc) + '\n\n')
+
+        acc = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
+        self.parent.output.insert(INSERT, 'Soften dataset\n')
+        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc) + '\n\n')
+
+    def ann_classifier(self):
+        print("ANN")
 
 
 # Main Program
