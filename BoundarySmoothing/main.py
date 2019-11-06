@@ -19,7 +19,7 @@ def read_file(file_name):
 # Function to give format to the rows that will be written in file
 def list_to_string(new_list):
     new_string = ""
-    print(len(new_list))
+    # print(len(new_list))
     for i in range(len(new_list)):
         if i == len(new_list)-1:
             new_string += str(int(new_list[i])) + "\n"
@@ -214,6 +214,8 @@ class GUI(Frame):
         # Setting Tools menu
         tools_menu = Menu(menu_bar)
         menu_bar.add_cascade(label='Tools', menu=tools_menu)
+        tools_menu.add_command(label='.txt to .arff', command=self.txt_to_arff)
+        tools_menu.add_separator()
         tools_menu.add_command(label='Weka', command=self.open_weka)
 
         # Setting Help menu
@@ -223,11 +225,11 @@ class GUI(Frame):
 
         # Text output
         self.parent.output = Text(self.parent)
-        self.parent.output.grid(row=0, column=2, rowspan=10, sticky=W+E+N+S, padx=5, pady=5)
+        self.parent.output.grid(row=0, column=2, rowspan=17, sticky=W+E+N+S, padx=5, pady=5)
 
         # create a Scrollbar and associate it with output
         scroll_b = ttk.Scrollbar(self.parent, command=self.parent.output.yview)
-        scroll_b.grid(row=0, column=3, rowspan=10, sticky=W+E+N+S)
+        scroll_b.grid(row=0, column=3, rowspan=16, sticky=W+E+N+S)
         self.parent.output['yscrollcommand'] = scroll_b.set
 
         # Plot Labels
@@ -250,7 +252,7 @@ class GUI(Frame):
 
         # Smoothing Labels
         Label(self.parent, text="Smoothing:").grid(row=5)
-        Label(self.parent, text="# Neighbors:").grid(row=6)
+        Label(self.parent, text="# Neighbors").grid(row=6)
 
         # Smoothing Entries
         self.parent.e3 = Entry(self.parent)
@@ -261,11 +263,63 @@ class GUI(Frame):
                command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
 
         # Separator
-        # Label(self.parent, text=" ").grid(row=8)
+        Label(self.parent, text=" ").grid(row=8)
 
-        # Quit Button
-        # Button(self.parent, text='Exit', width=17,
-        #       command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
+        # Create test file Label
+        Label(self.parent, text="Partition Test:").grid(row=9)
+
+        # Create Button
+        Button(self.parent, text='Create', width=17,
+               command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
+
+        # Separator
+        Label(self.parent, text=" ").grid(row=11)
+
+        # Classification Label
+        Label(self.parent, text="Classifier:").grid(row=12)
+
+        # Initialize Tkinter variable for Radiobutton
+        self.parent.v = IntVar()
+
+        # Classifiers' radiobutton
+        Radiobutton(self.parent, text="Bayes", padx=20, variable=self.parent.v, value=1)\
+            .grid(row=13, column=1, sticky=W, pady=4)
+        Radiobutton(self.parent, text="ANN", padx=20, variable=self.parent.v, value=2)\
+            .grid(row=14, column=1, sticky=W, pady=4)
+
+        # Classify Button
+        Button(self.parent, text='Classify', width=17,
+               command=self.parent.destroy).grid(row=15, column=1, sticky=W+E+N+S, pady=4)
+
+    # Set file name value
+    def set_file_name(self, x, fn):
+        self.parent.file_name = fn
+
+    # Set number of attributes value
+    def set_num_of_attr(self, num):
+        self.parent.num_of_attributes = num
+
+    # Set dataset size value
+    def set_dataset_size(self, num):
+        self.parent.dataset_size = num
+
+    # Set new dataset size value
+    def set_new_dataset_size(self, num):
+        self.parent.new_dataset_size = num
+
+    # Set new data array which will be stored in a new file
+    def set_new_data(self, data):
+        self.parent.new_data = data
+
+    # Function to open a file using File Dialog
+    def open_file(self):
+        file_types = [('Text files', '*.txt'), ('All files', '*')]
+        dlg = filedialog.Open(filetypes=file_types)
+        fl = dlg.show()
+
+        if fl != '':
+            self.set_file_name(self, fl)
+            self.file_loaded()
 
     # Show file has been loaded correctly
     def file_loaded(self):
@@ -292,32 +346,62 @@ class GUI(Frame):
         self.set_num_of_attr(attr)
         self.set_dataset_size(size)
 
-    def smooth_done(self):
-        # Task done
-        self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + self.parent.e3.get() + ' Neighbors Completed.\n')
-        self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.parent.new_dataset_size) + '\n')
-        excluded_data = int(self.parent.dataset_size) - int(self.parent.new_dataset_size)
-        self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n')
+    # Function to save a file
+    def save_file(self):
+        self.change_to_arff(self.parent.new_data, FALSE)
 
-    # Set file name value
-    def set_file_name(self, x, fn):
-        self.parent.file_name = fn
+    #
+    def txt_to_arff(self):
+        data = read_file(self.parent.file_name)
+        data.pop(0)
+        data.pop(0)
+        data.pop(0)
+        self.change_to_arff(data, TRUE)
 
-    # Set number of attributes value
-    def set_num_of_attr(self, num):
-        self.parent.num_of_attributes = num
+    # txt file to arff file using filedialog
+    def change_to_arff(self, dataset, flag):
 
-    # Set dataset size value
-    def set_dataset_size(self, num):
-        self.parent.dataset_size = num
+        f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
+        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+            return
 
-    # Set new dataset size value
-    def set_new_dataset_size(self, num):
-        self.parent.new_dataset_size = num
+        # Get and write RELATION to file
+        path = self.parent.file_name
+        path_arr = path.split('/')
+        name_arr = path_arr[len(path_arr) - 1].split('.')
+        name = name_arr[0]
+        relation = '@RELATION ' + name + '\n\n'
+        f.write(relation)
 
-    # Set new data array which will be stored in a new file
-    def set_new_data(self, data):
-        self.parent.new_data = data
+        # Get and write ATTRIBUTES to file
+        num = self.parent.num_of_attributes
+        for i in range(int(num)):
+            attribute = '@ATTRIBUTE ' + str(i) + ' REAL' + '\n'
+            f.write(attribute)
+        f.write('\n')
+
+        data_to_save = dataset
+
+        # Get and write DATA to file
+        if flag:
+            data = '@DATA\n'
+            f.write(data)
+            for row in data_to_save:
+                f.write(row)
+            f.close()
+        else:
+            data = '@DATA\n'
+            f.write(data)
+            i = 0
+            for row in data_to_save:
+                i = i + 1
+                new_string = list_to_string(row)
+                f.write(new_string)
+            f.close()
+
+    # Function to open weka.jar file
+    def open_weka(self):
+        subprocess.Popen(['java', '-jar', '/home/hlxs/Downloads/weka-3-8-3/weka.jar'])
 
     # Get values to plot original file
     def plot(self):
@@ -338,51 +422,13 @@ class GUI(Frame):
             self.smooth_done()
         self.set_new_data(new_data)
 
-    # Function to open weka.jar file
-    def open_weka(self):
-        subprocess.Popen(['java', '-jar', '/home/hlxs/Downloads/weka-3-8-3/weka.jar'])
-
-    # Function to open a file using File Dialog
-    def open_file(self):
-        file_types = [('Text files', '*.txt'), ('All files', '*')]
-        dlg = filedialog.Open(filetypes=file_types)
-        fl = dlg.show()
-
-        if fl != '':
-            self.set_file_name(self, fl)
-            self.file_loaded()
-
-    # Function to save a file using File Dialog
-    def save_file(self):
-        f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
-        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
-            return
-
-        # Get and write RELATION to file
-        path = self.parent.file_name
-        path_arr = path.split('/')
-        name_arr = path_arr[len(path_arr)-1].split('.')
-        name = name_arr[0]
-        relation = '@RELATION ' + name + '\n\n'
-        f.write(relation)
-
-        # Get and write ATTRIBUTES to file
-        num = self.parent.num_of_attributes
-        for i in range(int(num)):
-            attribute = '@ATTRIBUTE ' + str(i) + ' REAL' + '\n'
-            f.write(attribute)
-        f.write('\n')
-
-        # Get and write DATA to file
-        data = '@DATA\n'
-        f.write(data)
-        data_to_save = self.parent.new_data
-        i=0
-        for row in data_to_save:
-            i = i + 1
-            new_string = list_to_string(row)
-            f.write(new_string)
-        f.close()
+    # Show info about the smoothing process
+    def smooth_done(self):
+        # Task done
+        self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + self.parent.e3.get() + ' Neighbors Completed.\n')
+        self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.parent.new_dataset_size) + '\n')
+        excluded_data = int(self.parent.dataset_size) - int(self.parent.new_dataset_size)
+        self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n')
 
 
 # Main Program
