@@ -1,9 +1,10 @@
+import subprocess
+import random
 from tkinter import *
 from tkinter import filedialog
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import numpy as np
-import subprocess
 from NN import KNN
 from NN import np_to_list
 
@@ -270,7 +271,7 @@ class GUI(Frame):
 
         # Create Button
         Button(self.parent, text='Create', width=17,
-               command=self.parent.destroy).grid(row=10, column=1, sticky=W, pady=4)
+               command=self.create_test_partition).grid(row=10, column=1, sticky=W, pady=4)
 
         # Separator
         Label(self.parent, text=" ").grid(row=11)
@@ -299,17 +300,21 @@ class GUI(Frame):
     def set_num_of_attr(self, num):
         self.parent.num_of_attributes = num
 
+    # Set original data
+    def set_dataset(self, data):
+        self.parent.dataset = data
+
     # Set dataset size value
     def set_dataset_size(self, num):
         self.parent.dataset_size = num
 
+    # Set new data array which will be stored in a new file
+    def set_new_dataset(self, data):
+        self.parent.new_data = data
+
     # Set new dataset size value
     def set_new_dataset_size(self, num):
         self.parent.new_dataset_size = num
-
-    # Set new data array which will be stored in a new file
-    def set_new_data(self, data):
-        self.parent.new_data = data
 
     # Function to open a file using File Dialog
     def open_file(self):
@@ -319,6 +324,8 @@ class GUI(Frame):
 
         if fl != '':
             self.set_file_name(self, fl)
+            data = read_file(self.parent.file_name)
+            self.set_dataset(data)
             self.file_loaded()
 
     # Show file has been loaded correctly
@@ -333,7 +340,7 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Name: ' + name + '\n\n')
 
         # Open file to get info
-        file = read_file(self.parent.file_name)
+        file = self.parent.dataset
         size = file[0].strip()
         attr = file[1].strip()
         classes = file[2].strip()
@@ -352,7 +359,7 @@ class GUI(Frame):
 
     #
     def txt_to_arff(self):
-        data = read_file(self.parent.file_name)
+        data = self.parent.dataset
         data.pop(0)
         data.pop(0)
         data.pop(0)
@@ -420,7 +427,7 @@ class GUI(Frame):
         if new_data != 0:
             self.set_new_dataset_size(len(new_data))
             self.smooth_done()
-        self.set_new_data(new_data)
+        self.set_new_dataset(new_data)
 
     # Show info about the smoothing process
     def smooth_done(self):
@@ -429,6 +436,14 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.parent.new_dataset_size) + '\n')
         excluded_data = int(self.parent.dataset_size) - int(self.parent.new_dataset_size)
         self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n')
+
+    def create_test_partition(self):
+        data = self.parent.dataset
+        data.pop(0)
+        data.pop(0)
+        data.pop(0)
+        test_size = len(data) / 4
+        test = random.choices(data, k=int(test_size))
 
 
 # Main Program
