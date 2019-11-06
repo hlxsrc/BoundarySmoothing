@@ -281,7 +281,7 @@ class GUI(Frame):
 
         # Smoothing Button
         Button(self.parent, text='Smooth Boundary', width=17,
-               command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
+               command=self.before_smoothing).grid(row=7, column=1, sticky=W, pady=4)
 
         # Separator
         Label(self.parent, text=" ").grid(row=8)
@@ -440,6 +440,11 @@ class GUI(Frame):
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
         plot(self, file_name, int(attr1), int(attr2))
+
+    # before smoothing
+    def before_smoothing(self):
+        self.parent.output.insert(INSERT, 'Smoothing...\n\n')
+        self.exec_knn()
 
     # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
