@@ -15,10 +15,12 @@ from NN import np_to_list  # Import function numpy array to list from NN
 
 # Function to read file
 def read_file(file_name):
-
-    f = open(file_name, "r")
-    lines = f.readlines()
-    return lines
+    try:
+        f = open(file_name, "r")
+        lines = f.readlines()
+        return lines
+    except TypeError:
+        messagebox.showinfo("Info", "Choose a file")
 
 
 # Function to give format to the rows that will be written in file
@@ -78,7 +80,7 @@ def plot(self, data, attr1, attr2, string, flag):
     attr = self.get_num_attr()
     classes = self.get_num_classes()
 
-    # new arrays that'll have data to plot
+    # new arrays waiting for data to plot
     list1 = []
     list2 = []
     e_list1 = []
@@ -87,9 +89,9 @@ def plot(self, data, attr1, attr2, string, flag):
     # Start to plot
     plt.figure()
 
+    # if flag is false gets excluded data
     if not flag:
         excluded_data = np.asarray(self.get_excluded_data())
-        print(excluded_data)
 
     # takes values from matrix with specific classes
     for i in range(int(classes)):
@@ -99,8 +101,8 @@ def plot(self, data, attr1, attr2, string, flag):
                 list1.append(row[int(attr1)])
                 list2.append(row[int(attr2)])
         if not flag:
+            # get excluded data divided by classes
             for e_row in excluded_data:
-                # comparison of classes
                 if e_row[int(attr)] == i:
                     e_list1.append(e_row[int(attr1)])
                     e_list2.append(e_row[int(attr2)])
@@ -108,12 +110,14 @@ def plot(self, data, attr1, attr2, string, flag):
         # plot new data
         plt.scatter(list1, list2, marker='o')
         if not flag:
+            # plot excluded data
             plt.scatter(e_list1, e_list2, marker='^')
             e_list1.clear()
             e_list2.clear()
         list1.clear()
         list2.clear()
 
+    # Write title and name of attributes
     plt.title(format(string))
     plt.xlabel("Attribute {}".format(attr1))
     plt.ylabel("Attribute {}".format(attr2))
@@ -243,69 +247,60 @@ class GUI(Frame):
 
         # Plot Labels
         Label(self.parent, text="Plot: ").grid(row=0)
-        Label(self.parent, text="Attribute ").grid(row=1)
-        Label(self.parent, text="Attribute ").grid(row=2)
-
-        # Plot Entries
-        self.parent.e1 = Entry(self.parent)
-        self.parent.e2 = Entry(self.parent)
-        self.parent.e1.grid(row=1, column=1, sticky=W)
-        self.parent.e2.grid(row=2, column=1, sticky=W)
 
         # Plot Button
         Button(self.parent, text='Show graphic', width=17,
-               command=self.plot).grid(row=3, column=1, sticky=W, pady=4)
+               command=self.plot).grid(row=1, column=1, sticky=W, pady=4)
 
         # Separator
-        Label(self.parent, text=" ").grid(row=4)
+        Label(self.parent, text=" ").grid(row=2)
 
         # Smoothing Labels
-        Label(self.parent, text="Smoothing:").grid(row=5)
-        Label(self.parent, text="# Neighbors").grid(row=6)
-
-        # Smoothing Entries
-        self.parent.e3 = Entry(self.parent)
-        self.parent.e3.grid(row=6, column=1, sticky=W)
+        Label(self.parent, text="Smoothing:").grid(row=3)
 
         # Smoothing Button
         Button(self.parent, text='Smooth Boundary', width=17,
-               command=self.before_smoothing).grid(row=7, column=1, sticky=W, pady=4)
+               command=self.exec_knn).grid(row=4, column=1, sticky=W, pady=4)
 
         # Separator
-        Label(self.parent, text=" ").grid(row=8)
+        Label(self.parent, text=" ").grid(row=5)
 
         # Classification Label
-        Label(self.parent, text="Classifier:").grid(row=9)
+        Label(self.parent, text="Classifier:").grid(row=6)
 
         # Initialize Tkinter variable for Radiobutton
         self.parent.v = IntVar()
 
         # Classifiers' radiobutton
         Radiobutton(self.parent, text="Naive Bayes", padx=20, variable=self.parent.v, value=1)\
-            .grid(row=10, column=1, sticky=W, pady=4)
+            .grid(row=7, column=1, sticky=W, pady=4)
         Radiobutton(self.parent, text="ANN", padx=20, variable=self.parent.v, value=2)\
-            .grid(row=11, column=1, sticky=W, pady=4)
+            .grid(row=8, column=1, sticky=W, pady=4)
 
         # Classify Button
         Button(self.parent, text='Classify', width=17,
-               command=self.radio_choice).grid(row=12, column=1, sticky=W+E+N+S, pady=4)
+               command=self.radio_choice).grid(row=9, column=1, sticky=W+E+N+S, pady=4)
 
     # Function to open a file using File Dialog
     def open_file(self):
-        file_types = [('Text files', '*.txt'), ('All files', '*')]
-        dlg = filedialog.Open(filetypes=file_types)
-        fl = dlg.show()
+        try:
+            file_types = [('Text files', '*.txt'), ('All files', '*')]
+            dlg = filedialog.Open(filetypes=file_types)
+            fl = dlg.show()
 
-        if fl != '':
-            self.set_file_name(self, fl)
-            data = read_file(self.parent.file_name)
-            self.set_dataset(data)
-            self.file_loaded()
+            if fl != '':
+                self.set_file_name(self, fl)
+                data = read_file(self.parent.file_name)
+                self.set_dataset(data)
+                self.file_loaded()
+                # File loaded
+                self.parent.output.insert(INSERT, 'File loaded... \n\n')
+        except AttributeError:
+            # File loaded
+            self.parent.output.insert(INSERT, 'File not loaded... \n\n')
 
     # Show file has been loaded correctly
     def file_loaded(self):
-        # File loaded
-        self.parent.output.insert(INSERT, 'File loaded... \n\n')
 
         # Set name of the file
         path = self.parent.file_name
@@ -370,7 +365,10 @@ class GUI(Frame):
 
     # Function to save a file
     def save_file(self):
-        self.change_to_arff(self.parent.new_train_set, FALSE)
+        try:
+            self.change_to_arff(self.parent.new_train_set, FALSE)
+        except AttributeError:
+            messagebox.showerror("Error", "There is nothing to save")
 
     def plot_original(self):
         try:
@@ -392,11 +390,14 @@ class GUI(Frame):
 
     # Function to change original file from txt to arrf
     def original_txt_to_arff(self):
-        data = self.parent.dataset
-        data.pop(0)
-        data.pop(0)
-        data.pop(0)
-        self.change_to_arff(data, TRUE)
+        try:
+            data = self.parent.dataset
+            data.pop(0)
+            data.pop(0)
+            data.pop(0)
+            self.change_to_arff(data, TRUE)
+        except AttributeError:
+            messagebox.showerror("Error", "There is nothing to save")
 
     # txt file to arff file using filedialog
     def change_to_arff(self, dataset, flag):
@@ -446,38 +447,56 @@ class GUI(Frame):
 
     # Get values to plot original file
     def plot(self):
-        data = self.get_train_set()
-        attr1 = self.parent.e1.get()
-        attr2 = self.parent.e2.get()
-        plot(self, data, int(attr1), int(attr2), 'Train data before boundary smoothing', TRUE)
-
-    # TEXT before smoothing
-    def before_smoothing(self):
-        self.parent.output.insert(INSERT, 'Smoothing...\n\n')
-        self.exec_knn()
+        try:
+            data = self.get_train_set()
+            attr1 = simpledialog.askinteger('Smoothing', 'First attribute to plot', minvalue=0)
+            attr2 = simpledialog.askinteger('Smoothing', 'Second attribute to plot', minvalue=0)
+            plot(self, data, int(attr1), int(attr2), 'Train data before boundary smoothing', TRUE)
+        except AttributeError:
+            messagebox.showerror('Error', 'There is no data to plot')
+        except ValueError:
+            messagebox.showerror('Error', 'The value of an attribute is wrong or does not exist')
+        except IndexError:
+            messagebox.showerror('Error', 'Attribute does not exist')
 
     # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
-        # Get input
-        data = self.get_train_set()
-        attr1 = self.parent.e1.get()
-        attr2 = self.parent.e2.get()
-        num_neighbors = self.parent.e3.get()
+        try:
+            # Get input
+            data = self.get_train_set()
 
-        # Execute knn
-        new_data, excluded_data = knn(self, data, attr1, attr2, num_neighbors)
+            # Get input
+            num_neighbors = simpledialog.askinteger('Smoothing', 'Number of K neighbors', minvalue=0)
+            attr1 = simpledialog.askinteger('Smoothing', 'First attribute to plot', minvalue=0)
+            attr2 = simpledialog.askinteger('Smoothing', 'Second attribute to plot', minvalue=0)
 
-        # Set parameters
-        if new_data != 0:
-            self.set_new_train_set_size(len(new_data))
-            self.smooth_done()
-        self.set_new_train_set(new_data)
-        self.set_excluded_data(excluded_data)
+            # Gives info to users
+            self.parent.output.insert(INSERT, 'Smoothing...\n\n')
+
+            # Execute knn
+            new_data, excluded_data = knn(self, data, attr1, attr2, num_neighbors)
+
+            # Set parameters
+            if new_data != 0:
+                self.set_new_train_set_size(len(new_data))
+                self.set_num_neighbors(num_neighbors)
+                self.smooth_done()
+            self.set_new_train_set(new_data)
+            self.set_excluded_data(excluded_data)
+        except UnboundLocalError:
+            messagebox.showinfo('Info', 'Add a file in File > Open')
+        except ValueError:
+            messagebox.showerror('Error', 'The number of neighbors is wrong')
+            # Gives info to users
+            self.parent.output.insert(INSERT, 'Something went wrong\n\n')
+        except AttributeError:
+            messagebox.showerror('Error', 'There is no data to soft')
 
     # Show info about the smoothing process
     def smooth_done(self):
         # Task done
-        self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + self.parent.e3.get() + ' Neighbors Completed.\n')
+        self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + str(self.get_num_neighbors()) +
+                                  ' Neighbors Completed.\n')
         self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.get_new_train_set_size()) + '\n')
         excluded_data = int(self.get_train_set_size()) - int(self.get_new_train_set_size())
         self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n\n')
@@ -488,9 +507,15 @@ class GUI(Frame):
         choice = self.parent.v.get()
 
         if choice == 1:
-            self.naive_bayes_classifier()
-        else:
-            self.ann_classifier()
+            try:
+                self.naive_bayes_classifier()
+            except AttributeError:
+                messagebox.showerror("Error", 'There is no data to classify')
+        if choice == 2:
+            try:
+                self.ann_classifier()
+            except AttributeError:
+                messagebox.showerror("Error", 'There is no data to classify')
 
     # Naive bayes classifier
     def naive_bayes_classifier(self):
@@ -572,6 +597,14 @@ class GUI(Frame):
     # Get number of classes
     def get_num_classes(self):
         return self.parent.num_classes
+
+    # Set number of neighbors
+    def set_num_neighbors(self, num):
+        self.parent.num_neighbors = num
+
+    # Get number of classes
+    def get_num_neighbors(self):
+        return self.parent.num_neighbors
 
     # Set train set (data and target)
     def set_train_set(self, x_train, y_train):
