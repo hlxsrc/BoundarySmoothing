@@ -5,14 +5,11 @@ from tkinter import filedialog
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import numpy as np
-# Import Gaussian Naive Bayes model
-from sklearn.naive_bayes import GaussianNB
-# Import scikit-learn metrics module for accuracy calculation
-from sklearn import metrics
-# Import KNN from NN
-from NN import KNN
-# Import function numpy array to list from NN
-from NN import np_to_list
+from sklearn.naive_bayes import GaussianNB  # Import Gaussian Naive Bayes model
+from sklearn import metrics  # Import scikit-learn metrics module for accuracy calculation
+from sklearn.model_selection import train_test_split  # Import train_test_split function
+from NN import KNN  # Import KNN from NN
+from NN import np_to_list  # Import function numpy array to list from NN
 
 
 # Function to read file
@@ -66,65 +63,46 @@ def majority(neighbors, attr):
 
 
 # Function to plot original data
-def plot(self, file_name, attr1, attr2):
-
-    # read the file
-    lines = read_file(file_name)
+def plot(self, data, attr1, attr2, string):
 
     # store configuration values
-    size = lines[0].strip()
-    attr = lines[1].strip()
-    classes = lines[2].strip()
+    attr = self.get_num_attr()
+    classes = self.get_num_classes()
 
-    # stores the data after the first 3 rows
-    A = np.loadtxt(file_name, skiprows=3, delimiter=',')
-
-    # attribute's array
+    # new arrays that'll have data to plot
     list1 = []
     list2 = []
 
+    # Start to plot
     plt.figure()
 
     # takes values from matrix with specific classes
     for i in range(int(classes)):
-        for j in range(int(size)):
+        for row in data:
             # comparison of classes
-            if A[j][int(attr)] == i:
-                list1.append(A[j][attr1])
-                list2.append(A[j][attr2])
+            if row[int(attr)] == i:
+                list1.append(row[int(attr1)])
+                list2.append(row[int(attr2)])
+        # plot new data
         plt.scatter(list1, list2, marker='o')
         list1.clear()
         list2.clear()
 
-    plt.title("Comparison before Boundary Softening")
+    plt.title(format(string))
     plt.xlabel("Attribute {}".format(attr1))
     plt.ylabel("Attribute {}".format(attr2))
     plt.show()
 
-    return attr
-
 
 # executes the knn algorithm in order to soften the decision boundary
-def knn(file_name, attr1, attr2, num_neighbors):
+def knn(self, dataset, attr1, attr2, num_neighbors):
 
     # Create new object
-    nn = KNN(file_name)
-
-    # Load dataset
-    dataset = nn.load_file()
-
-    # Defines a new record
-
-    # read the file
-    lines = read_file(file_name)
+    nn = KNN()
 
     # store configuration values
-    size = lines[0].strip()
-    attr = lines[1].strip()
-    classes = lines[2].strip()
-
-    # stores the data after the first 3 rows
-    A = np.loadtxt(file_name, skiprows=3, delimiter=',')
+    attr = self.get_num_attr()
+    classes = self.get_num_classes()
 
     # list representing the data after the boundary smoothing
     after_boundary_smoothing = []
@@ -137,7 +115,7 @@ def knn(file_name, attr1, attr2, num_neighbors):
     # the row will be added to a new list
     # else the row will be excluded from the new list
     # this new list is going to represent the data after the softening of the decision boundary
-    for row in A:
+    for row in dataset:
 
         # predict the label
         neighbors = nn.predict_classification(dataset, row, int(num_neighbors))
@@ -163,30 +141,8 @@ def knn(file_name, attr1, attr2, num_neighbors):
         # else:
         #     excluded_data.append(row)
 
-    # print("Length of ABS: ", len(after_boundary_smoothing))
-    # print("Length of ED: ", len(excluded_data))
-
-    # attribute's array
-    list1 = []
-    list2 = []
-
-    # takes values from matrix with specific classes
-    for i in range(int(classes)):
-        for row in after_boundary_smoothing:
-            # comparison of classes
-            if row[int(attr)] == i:
-                list1.append(row[int(attr1)])
-                list2.append(row[int(attr2)])
-        # plot new data
-        plt.scatter(list1, list2, marker='o')
-        list1.clear()
-        list2.clear()
-
-    # add details to new plotted data
-    plt.title("After Boundary Softening w/{} neighbors ".format(num_neighbors))
-    plt.xlabel("Attribute {}".format(attr1))
-    plt.ylabel("Attribute {}".format(attr2))
-    plt.show()
+    # plot after boundary smoothing
+    plot(self, after_boundary_smoothing, attr1, attr2, 'Train after boundary smoothing')
 
     # returns data after boundary smoothing so it can be written to a new file
     return after_boundary_smoothing
@@ -235,7 +191,7 @@ class GUI(Frame):
         # Setting Tools menu
         tools_menu = Menu(menu_bar)
         menu_bar.add_cascade(label='Tools', menu=tools_menu)
-        tools_menu.add_command(label='.txt to .arff', command=self.txt_to_arff)
+        tools_menu.add_command(label='Original .txt to .arff', command=self.original_txt_to_arff)
         tools_menu.add_separator()
         tools_menu.add_command(label='Weka', command=self.open_weka)
 
@@ -286,59 +242,147 @@ class GUI(Frame):
         # Separator
         Label(self.parent, text=" ").grid(row=8)
 
-        # Create test file Label
-        Label(self.parent, text="Partition Test:").grid(row=9)
-
-        # Create Button
-        Button(self.parent, text='Create', width=17,
-               command=self.create_test_partition).grid(row=10, column=1, sticky=W, pady=4)
-
-        # Separator
-        Label(self.parent, text=" ").grid(row=11)
-
         # Classification Label
-        Label(self.parent, text="Classifier:").grid(row=12)
+        Label(self.parent, text="Classifier:").grid(row=9)
 
         # Initialize Tkinter variable for Radiobutton
         self.parent.v = IntVar()
 
         # Classifiers' radiobutton
         Radiobutton(self.parent, text="Naive Bayes", padx=20, variable=self.parent.v, value=1)\
-            .grid(row=13, column=1, sticky=W, pady=4)
+            .grid(row=10, column=1, sticky=W, pady=4)
         Radiobutton(self.parent, text="ANN", padx=20, variable=self.parent.v, value=2)\
-            .grid(row=14, column=1, sticky=W, pady=4)
+            .grid(row=11, column=1, sticky=W, pady=4)
 
         # Classify Button
         Button(self.parent, text='Classify', width=17,
-               command=self.radio_choice).grid(row=15, column=1, sticky=W+E+N+S, pady=4)
+               command=self.radio_choice).grid(row=12, column=1, sticky=W+E+N+S, pady=4)
 
     # Set file name value
     def set_file_name(self, x, fn):
         self.parent.file_name = fn
 
-    # Set number of attributes value
-    def set_num_of_attr(self, num):
-        self.parent.num_of_attributes = num
+    # Get file name value
+    def get_file_name(self):
+        return self.parent.file_name
 
     # Set original data
     def set_dataset(self, data):
         self.parent.dataset = data
 
+    # Get original data
+    def get_dataset(self):
+        return self.parent.dataset
+
     # Set dataset size value
     def set_dataset_size(self, num):
         self.parent.dataset_size = num
 
-    # Set new data array which will be stored in a new file
-    def set_new_dataset(self, data):
-        self.parent.new_dataset = data
+    # Get dataset size
+    def get_dataset_size(self):
+        return self.parent.dataset_size
 
-    # Set new dataset size value
-    def set_new_dataset_size(self, num):
-        self.parent.new_dataset_size = num
+    # Set number of attributes
+    def set_num_attr(self, num):
+        self.parent.num_attr = num
 
-    # Set test partition
-    def set_test(self, data):
-        self.parent.test = data
+    # Get number of attributes
+    def get_num_attr(self):
+        return self.parent.num_attr
+
+    # Set number of classes
+    def set_num_classes(self, num):
+        self.parent.num_classes = num
+
+    # Get number of classes
+    def get_num_classes(self):
+        return self.parent.num_classes
+
+    # Set train set (data and target)
+    def set_train_set(self, x_train, y_train):
+        # initialize new array
+        train = []
+        # for each row on x_train add y_train[i] value at the end
+        for i, row in enumerate(x_train):
+            new_row = np.append(row,y_train[i])
+            train.append(new_row)
+
+        self.parent.train = np.asarray(train)
+
+    # Get train set (data and labels)
+    def get_train_set(self):
+        return self.parent.train
+
+    # Set dataset size value
+    def set_train_set_size(self, num):
+        self.parent.train_size = num
+
+    # Get dataset size
+    def get_train_set_size(self):
+        return self.parent.train_size
+
+    # Set x_train (data)
+    def set_x_train(self, x_train):
+        self.parent.x_train = x_train
+
+    # Get x_train (data)
+    def get_x_train(self):
+        return self.parent.x_train
+
+    # Set y_train (labels)
+    def set_y_train(self, y_train):
+        self.parent.y_train = y_train
+
+    # Get y_train (labels)
+    def get_y_train(self):
+        return self.parent.y_train
+
+    # Set test set (data and labels)
+    def set_test_set(self, x_test, y_test):
+        # initialize new array
+        test = []
+        # for each row on x_test add y_test[i] value at the end
+        for i, row in enumerate(x_test):
+            new_row = np.append(row, y_test[i])
+            test.append(new_row)
+
+        self.parent.test = np.asarray(test)
+
+    # Get test set (data and labels)
+    def get_test_set(self):
+        return self.parent.test
+
+    # Set x_test (data)
+    def set_x_test(self, x_test):
+        self.parent.x_test = x_test
+
+    # Get x_test (data)
+    def get_x_test(self):
+        return self.parent.x_test
+
+    # Set y_test (labels)
+    def set_y_test(self, y_test):
+        self.parent.y_test = y_test
+
+    # Get x_test (labels)
+    def get_y_test(self):
+        return self.parent.y_test
+
+    # Set new train set after boundary smoothing
+    def set_new_train_set(self, data):
+        self.parent.new_train = data
+
+    # Get new train set after boundary smoothing
+    def get_new_train_set(self):
+        return self.parent.new_train
+
+    # Set new size of train set after boundary smoothing
+    def set_new_train_set_size(self, num):
+        self.parent.new_train_set_size = num
+
+    # Get new size of train set after boundary smoothing
+    def get_new_train_set_size(self):
+        return self.parent.new_train_set_size
 
     # Function to open a file using File Dialog
     def open_file(self):
@@ -374,15 +418,52 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Attributes: ' + attr + '\n')
         self.parent.output.insert(INSERT, 'Classes: ' + classes + '\n\n')
 
-        self.set_num_of_attr(attr)
+        self.set_num_attr(attr)
+        self.set_num_classes(classes)
         self.set_dataset_size(size)
+
+        self.create_train_test_partition()
+
+    # Create test partition for classifiers with size 1/4 from original size of dataset
+    def create_train_test_partition(self):
+
+        # Get original dataset
+        dataset = self.parent.dataset
+        # Takes out the first three rows
+        dataset.pop(0)
+        dataset.pop(0)
+        dataset.pop(0)
+
+        data = []
+        target = []
+        for row in dataset:
+            np_row = np.fromstring(row, float, int(self.get_num_attr()), ',')
+            data.append(np_row)
+            string = row.split(',')
+            target.append(int(string[int(self.get_num_attr())]))
+
+        # Split dataset into training set and test set
+        x_train, x_test, y_train, y_test = train_test_split(np.asarray(data), target, test_size=0.25, random_state=109)
+
+        self.set_train_set(x_train, y_train)
+        self.set_x_train(x_train)
+        self.set_y_train(y_train)
+        self.set_test_set(x_test, y_test)
+        self.set_x_test(x_test)
+        self.set_y_test(y_test)
+
+        self.set_train_set_size(len(x_train))
+
+        self.parent.output.insert(INSERT, 'Test partition created.\n\n')
+        self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
+        self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
 
     # Function to save a file
     def save_file(self):
-        self.change_to_arff(self.parent.new_dataset, FALSE)
+        self.change_to_arff(self.parent.new_train_set, FALSE)
 
-    #
-    def txt_to_arff(self):
+    # Function to change original file from txt to arrf
+    def original_txt_to_arff(self):
         data = self.parent.dataset
         data.pop(0)
         data.pop(0)
@@ -392,8 +473,9 @@ class GUI(Frame):
     # txt file to arff file using filedialog
     def change_to_arff(self, dataset, flag):
 
+        # Open file to write in it
         f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
-        if f is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+        if f is None:  # return `None` if dialog closed with "cancel".
             return
 
         # Get and write RELATION to file
@@ -411,20 +493,20 @@ class GUI(Frame):
             f.write(attribute)
         f.write('\n')
 
-        data_to_save = dataset
-
         # Get and write DATA to file
         if flag:
+            # If TRUE writes original dataset
             data = '@DATA\n'
             f.write(data)
-            for row in data_to_save:
+            for row in dataset:
                 f.write(row)
             f.close()
         else:
+            # else writes data after boundary smoothing
             data = '@DATA\n'
             f.write(data)
             i = 0
-            for row in data_to_save:
+            for row in dataset:
                 i = i + 1
                 new_string = list_to_string(row)
                 f.write(new_string)
@@ -436,48 +518,42 @@ class GUI(Frame):
 
     # Get values to plot original file
     def plot(self):
-        file_name = self.parent.file_name
+        data = self.get_train_set()
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
-        plot(self, file_name, int(attr1), int(attr2))
+        plot(self, data, int(attr1), int(attr2), 'Train data before boundary smoothing')
 
-    # before smoothing
+    # TEXT before smoothing
     def before_smoothing(self):
         self.parent.output.insert(INSERT, 'Smoothing...\n\n')
         self.exec_knn()
 
     # Executes KNN to get data after the boundary smoothing
     def exec_knn(self):
-        file_name = self.parent.file_name
+        # Get input
+        data = self.get_train_set()
         attr1 = self.parent.e1.get()
         attr2 = self.parent.e2.get()
         num_neighbors = self.parent.e3.get()
-        new_data = knn(file_name, attr1, attr2, num_neighbors)
+
+        # Execute knn
+        new_data = knn(self, data, attr1, attr2, num_neighbors)
+
+        # Set parameters
         if new_data != 0:
-            self.set_new_dataset_size(len(new_data))
+            self.set_new_train_set_size(len(new_data))
             self.smooth_done()
-        self.set_new_dataset(new_data)
+        self.set_new_train_set(new_data)
 
     # Show info about the smoothing process
     def smooth_done(self):
         # Task done
         self.parent.output.insert(INSERT, 'Boundary Smoothing with ' + self.parent.e3.get() + ' Neighbors Completed.\n')
-        self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.parent.new_dataset_size) + '\n')
-        excluded_data = int(self.parent.dataset_size) - int(self.parent.new_dataset_size)
+        self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.get_new_train_set_size()) + '\n')
+        excluded_data = int(self.get_train_set_size()) - int(self.get_new_train_set_size())
         self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n\n')
 
-    # Create test partition for classifiers with size 1/4 from original size of dataset
-    def create_test_partition(self):
-        data = self.parent.dataset
-        data.pop(0)
-        data.pop(0)
-        data.pop(0)
-        test_size = len(data) / 4
-        test = random.choices(data, k=int(test_size))
-        self.set_test(test)
-        self.parent.output.insert(INSERT, 'Test partition created.\n\n')
-
-    # get choice from radio button
+    # Get choice from radio button
     def radio_choice(self):
 
         choice = self.parent.v.get()
@@ -487,45 +563,32 @@ class GUI(Frame):
         else:
             self.ann_classifier()
 
+    # Naive bayes classifier
     def naive_bayes_classifier(self):
 
-        x_train_original = []
-        y_train_original = []
-        # train data to float
-        train_original = self.parent.dataset
-        for row in train_original:
-            np_row = np.fromstring(row, float, int(self.parent.num_of_attributes), ',')
-            x_train_original.append(np_row)
-            string = row.split(',')
-            y_train_original.append(int(string[int(self.parent.num_of_attributes)]))
+        x_train_original = self.get_x_train()
+        y_train_original = self.get_y_train()
 
         x_train_soften = []
         y_train_soften = []
         # train data to float
-        train_soften = np.asarray(self.parent.new_dataset)
+        train_soften = np.asarray(self.get_new_train_set())
         for row in train_soften:
-            x_train_soften.append(np.delete(row, int(self.parent.num_of_attributes)))
-            y_train_soften.append(int(row.item(int(self.parent.num_of_attributes))))
+            x_train_soften.append(np.delete(row, int(self.get_num_attr())))
+            y_train_soften.append(int(row.item(int(self.get_num_attr()))))
 
         x_train_soften = np.asarray(x_train_soften)
 
-        x_test = []
-        y_test = []
-        # test data to float
-        test = self.parent.test
-        for row in test:
-            np_row = np.fromstring(row, float, int(self.parent.num_of_attributes), ',')
-            x_test.append(np_row)
-            string = row.split(',')
-            y_test.append(int(string[int(self.parent.num_of_attributes)]))
+        x_test = self.get_x_test()
+        y_test = self.get_y_test()
 
-        acc = naive_bayes(x_train_original, x_test, y_train_original, y_test)
+        acc1 = naive_bayes(x_train_original, x_test, y_train_original, y_test)
         self.parent.output.insert(INSERT, 'Original dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc) + '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc1) + '\n\n')
 
-        acc = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
+        acc2 = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc) + '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc2) + '\n\n')
 
     def ann_classifier(self):
         print("ANN")

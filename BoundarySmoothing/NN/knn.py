@@ -31,27 +31,6 @@ def euclidean_distance(row1, row2):
 
 class KNN:
 
-    # Receive name of the file
-    def __init__(self, filename):
-        self.filename = filename
-
-    # Load a file
-    def load_file(self):
-        dataset = list()
-        with open(self.filename, 'r') as file:
-            csv_reader = reader(file)
-            file_reader = list(csv_reader)
-
-            file_reader.pop(0)
-            file_reader.pop(0)
-            file_reader.pop(0)
-
-            for row in file_reader:
-                if not row:
-                    continue
-                dataset.append(row)
-        return dataset
-
     # Locate the most similar neighbors
     def get_neighbors(self, train, test_row, num_neighbors):
         distances = list()
