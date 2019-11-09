@@ -7,6 +7,8 @@ import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.naive_bayes import GaussianNB  # Import Gaussian Naive Bayes model
+from sklearn.neural_network import MLPClassifier  # Import Neural Network model
+from sklearn.preprocessing import StandardScaler  # Import Standar Scaler
 from sklearn import metrics  # Import scikit-learn metrics module for accuracy calculation
 from sklearn.model_selection import train_test_split  # Import train_test_split function
 from NN import KNN  # Import KNN from NN
@@ -178,6 +180,7 @@ def knn(self, dataset, attr1, attr2, num_neighbors):
     return after_boundary_smoothing, excluded_data
 
 
+# naive bayes
 def naive_bayes(x_train, x_test, y_train, y_test):
     # Create a Gaussian Classifier
     gnb = GaussianNB()
@@ -187,6 +190,40 @@ def naive_bayes(x_train, x_test, y_train, y_test):
 
     # Predict the response for test dataset
     y_pred = gnb.predict(x_test)
+
+    # returns model Accuracy, how often is the classifier correct?
+    return metrics.accuracy_score(y_test, y_pred)
+
+
+# Multi Layer Perceptron
+def multi_layer_perceptron(x_train, x_test, y_train, y_test, momentum, learning_rate,
+                           dataset_size, num_of_attr, num_of_classes):
+
+    # Get number of neurons in the hidden layer with formula Nh = Ns / (a * (Ni + No))
+    # Not this one because takes dataset size as a parameter
+    # hidden_layer_neurons = int(dataset_size) / 2 * (int(num_of_attr) + int(num_of_classes))
+
+    # Get number of neurons in the hidden layer with the mean of Ni and No (N=neurons, i=input, o=output)
+    hidden_layer_neurons = int(int(num_of_attr) + int(num_of_classes) / 2)
+
+    # Normalization of data
+    scaler = StandardScaler()
+    # Fit only to the training data
+    scaler.fit(x_train)
+
+    # Now apply the transformations to the data:
+    x_train = scaler.transform(x_train)
+    x_test = scaler.transform(x_test)
+
+    # Create a Neural Network Classifier
+    mlp = MLPClassifier(activation='logistic', solver='sgd', hidden_layer_sizes=hidden_layer_neurons, momentum=momentum,
+                        learning_rate='constant', learning_rate_init=learning_rate)
+
+    # Train the model using the training sets
+    mlp.fit(x_train, y_train)
+
+    # Predict the response for test dataset
+    y_pred = mlp.predict(x_test)
 
     # returns model Accuracy, how often is the classifier correct?
     return metrics.accuracy_score(y_test, y_pred)
@@ -494,8 +531,25 @@ class GUI(Frame):
                 self.set_new_train_set_size(len(new_data))
                 self.set_num_neighbors(num_neighbors)
                 self.smooth_done()
+
+            # set new train set after boundary smoothing
             self.set_new_train_set(new_data)
+            # set excluded data set after boundary smoothing
             self.set_excluded_data(excluded_data)
+
+            # reformat training set after boundary smoothing process
+            x_train_soften = []
+            y_train_soften = []
+            train_soften = np.asarray(data)
+            for row in train_soften:
+                # change to numpy array
+                x_train_soften.append(np.delete(row, int(self.get_num_attr())))
+                # change labels to int
+                y_train_soften.append(int(row.item(int(self.get_num_attr()))))
+
+            # set training set after boundary smoothing process
+            self.set_x_train_soft(np.asarray(x_train_soften))
+            self.set_y_train_soft(y_train_soften)
 
         # handle exceptions
         except UnboundLocalError:
@@ -516,51 +570,80 @@ class GUI(Frame):
         excluded_data = int(self.get_train_set_size()) - int(self.get_new_train_set_size())
         self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n\n')
 
-    # Get choice from radio button
+    # Get choice from radio button and executes a classifier
     def radio_choice(self):
 
         choice = self.parent.v.get()
 
-        if choice == 1:
-            try:
-                self.naive_bayes_classifier()
-            except AttributeError:
-                messagebox.showerror("Error", 'There is no data to classify')
-        if choice == 2:
-            try:
-                self.ann_classifier()
-            except AttributeError:
-                messagebox.showerror("Error", 'There is no data to classify')
+        try:
+            # get original training set
+            x_train_original = self.get_x_train()
+            y_train_original = self.get_y_train()
+
+            # get training set after boundary smoothing process
+            x_train_soften = self.get_x_train_soft()
+            y_train_soften = self.get_y_train_soft()
+
+            # get test set
+            x_test = self.get_x_test()
+            y_test = self.get_y_test()
+
+            if choice == 1:
+                self.naive_bayes_classifier(x_train_original, y_train_original, x_train_soften, y_train_soften,
+                                            x_test, y_test)
+            if choice == 2:
+                self.mlp_classifier(x_train_original, y_train_original, x_train_soften, y_train_soften,
+                                    x_test, y_test)
+
+        except AttributeError:
+            messagebox.showerror("Error", 'There is no data to classify')
 
     # Naive bayes classifier
-    def naive_bayes_classifier(self):
+    def naive_bayes_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften,
+                               x_test, y_test):
 
-        x_train_original = self.get_x_train()
-        y_train_original = self.get_y_train()
+        # Show results of the naive bayes classifier
+        self.parent.output.insert(INSERT, 'Results of the Naive Bayes Classifier\n\n')
 
-        x_train_soften = []
-        y_train_soften = []
-        # train data to float
-        train_soften = np.asarray(self.get_new_train_set())
-        for row in train_soften:
-            x_train_soften.append(np.delete(row, int(self.get_num_attr())))
-            y_train_soften.append(int(row.item(int(self.get_num_attr()))))
-
-        x_train_soften = np.asarray(x_train_soften)
-
-        x_test = self.get_x_test()
-        y_test = self.get_y_test()
-
+        # get accuracy of the original training set
         acc1 = naive_bayes(x_train_original, x_test, y_train_original, y_test)
         self.parent.output.insert(INSERT, 'Original dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc1) + '\n\n')
 
+        # get accuracy of the softened training set
         acc2 = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc2) + '\n\n')
 
-    def ann_classifier(self):
-        print("ANN")
+    # Multi Layer Perceptron classifier
+    def mlp_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften, x_test, y_test):
+
+        # Get input
+        momentum = simpledialog.askfloat('Multi-layer Perceptron', 'Momentum', minvalue=0)
+        learning_rate = simpledialog.askfloat('Multi-layer Perceptron', 'Learning rate', minvalue=0)
+
+        # Get number of attributes and number of classes
+        num_of_attr = self.get_num_attr()
+        num_of_classes = self.get_num_classes()
+
+        # Get dataset size
+        size_original = self.get_train_set_size()
+        size_softened = self.get_new_train_set_size()
+
+        # Show results of the mlp classifier
+        self.parent.output.insert(INSERT, 'Results of the Multi-layer Perceptron Classifier\n\n')
+
+        # get accuracy of the original training set
+        acc1 = multi_layer_perceptron(x_train_original, x_test, y_train_original, y_test, momentum, learning_rate,
+                                      size_original, num_of_attr, num_of_classes)
+        self.parent.output.insert(INSERT, 'Original dataset\n')
+        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc1) + '\n\n')
+
+        # get accuracy of the softened training set
+        acc2 = multi_layer_perceptron(x_train_soften, x_test, y_train_soften, y_test, momentum, learning_rate,
+                                      size_softened, num_of_attr, num_of_classes)
+        self.parent.output.insert(INSERT, 'Soften dataset\n')
+        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc2) + '\n\n')
 
     # GETTERS AND SETTERS
     # ------------------------------------------------------------------------
@@ -698,6 +781,22 @@ class GUI(Frame):
     # Get new train set after boundary smoothing
     def get_new_train_set(self):
         return self.parent.new_train
+
+    # Set x_train (data) after boundary smoothing
+    def set_x_train_soft(self, x_train):
+        self.parent.x_train_soft = x_train
+
+    # Get x_train (data) after boundary smoothing
+    def get_x_train_soft(self):
+        return self.parent.x_train_soft
+
+    # Set y_train (labels) after boundary smoothing
+    def set_y_train_soft(self, y_train):
+        self.parent.y_train_soft = y_train
+
+    # Get y_train (labels) after boundary smoothing
+    def get_y_train_soft(self):
+        return self.parent.y_train_soft
 
     # Set new size of train set after boundary smoothing
     def set_new_train_set_size(self, num):
