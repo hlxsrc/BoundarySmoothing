@@ -283,6 +283,7 @@ class GUI(Frame):
 
     # Function to open a file using File Dialog
     def open_file(self):
+
         try:
             file_types = [('Text files', '*.txt'), ('All files', '*')]
             dlg = filedialog.Open(filetypes=file_types)
@@ -335,14 +336,18 @@ class GUI(Frame):
         dataset.pop(0)
         dataset.pop(0)
 
+        # arrays waiting for data
         data = []
         target = []
         data_np = []
         for row in dataset:
+            # data columns from string to numpy array
             np_row = np.fromstring(row, float, int(self.get_num_attr()), ',')
             data.append(np_row)
+            # label column from string to array (int)
             string = row.split(',')
             target.append(int(string[int(self.get_num_attr())]))
+            # original data set from string to data
             new_row = np.fromstring(row, float, int(self.get_num_attr())+1, ',')
             data_np.append(new_row)
 
@@ -363,10 +368,12 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
         self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
 
+        self.change_to_arff(self.get_test_set(), FALSE, FALSE)
+
     # Function to save a file
     def save_file(self):
         try:
-            self.change_to_arff(self.parent.new_train_set, FALSE)
+            self.change_to_arff(self.parent.new_train_set, TRUE, FALSE)
         except AttributeError:
             messagebox.showerror("Error", "There is nothing to save")
 
@@ -395,35 +402,41 @@ class GUI(Frame):
             data.pop(0)
             data.pop(0)
             data.pop(0)
-            self.change_to_arff(data, TRUE)
+            self.change_to_arff(data, TRUE, TRUE)
         except AttributeError:
             messagebox.showerror("Error", "There is nothing to save")
 
     # txt file to arff file using filedialog
-    def change_to_arff(self, dataset, flag):
+    def change_to_arff(self, dataset, flag_ask, flag_write):
 
-        # Open file to write in it
-        f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
-        if f is None:  # return `None` if dialog closed with "cancel".
-            return
-
-        # Get and write RELATION to file
-        path = self.parent.file_name
+        # get file name
+        path = self.get_file_name()
         path_arr = path.split('/')
         name_arr = path_arr[len(path_arr) - 1].split('.')
         name = name_arr[0]
+
+        if flag_ask:
+            # Open file to write in it
+            f = filedialog.asksaveasfile(mode='w', defaultextension=".arff")
+            if f is None:  # return `None` if dialog closed with "cancel".
+                return
+        else:
+            new_string = 'data/' + name + '_test.arff'
+            f = open(new_string, 'w+')
+
+        # Get and write RELATION to file
         relation = '@RELATION ' + name + '\n\n'
         f.write(relation)
 
         # Get and write ATTRIBUTES to file
-        num = self.parent.num_of_attributes
+        num = self.get_num_attr()
         for i in range(int(num)):
             attribute = '@ATTRIBUTE ' + str(i) + ' REAL' + '\n'
             f.write(attribute)
         f.write('\n')
 
         # Get and write DATA to file
-        if flag:
+        if flag_write:
             # If TRUE writes original dataset
             data = '@DATA\n'
             f.write(data)
@@ -483,6 +496,8 @@ class GUI(Frame):
                 self.smooth_done()
             self.set_new_train_set(new_data)
             self.set_excluded_data(excluded_data)
+
+        # handle exceptions
         except UnboundLocalError:
             messagebox.showinfo('Info', 'Add a file in File > Open')
         except ValueError:
@@ -701,6 +716,7 @@ class GUI(Frame):
         return self.parent.excluded_data
 
     # ------------------------------------------------------------------------
+
 
 # Main Program
 def main():
