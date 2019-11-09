@@ -6,11 +6,12 @@ from tkinter import messagebox  # messagebox for showing errors
 import tkinter.ttk as ttk
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split  # Import train_test_split function
 from sklearn.naive_bayes import GaussianNB  # Import Gaussian Naive Bayes model
 from sklearn.neural_network import MLPClassifier  # Import Neural Network model
+from sklearn.model_selection import cross_val_score, cross_val_predict  # Import cross validation
 from sklearn.preprocessing import StandardScaler  # Import Standar Scaler
 from sklearn import metrics  # Import scikit-learn metrics module for accuracy calculation
-from sklearn.model_selection import train_test_split  # Import train_test_split function
 from NN import KNN  # Import KNN from NN
 from NN import np_to_list  # Import function numpy array to list from NN
 
@@ -186,13 +187,19 @@ def naive_bayes(x_train, x_test, y_train, y_test):
     gnb = GaussianNB()
 
     # Train the model using the training sets
-    gnb.fit(x_train, y_train)
+    model = gnb.fit(x_train, y_train)
 
     # Predict the response for test dataset
     y_pred = gnb.predict(x_test)
 
-    # returns model Accuracy, how often is the classifier correct?
-    return metrics.accuracy_score(y_test, y_pred)
+    # Makes cross validation
+    cross_scores, cross_prediction, cross_accuracy = cross_validation(model, x_train, y_train, 10)
+
+    # model Accuracy, how often is the classifier correct?
+    accuracy = metrics.accuracy_score(y_test, y_pred)
+
+    # returns info
+    return accuracy, cross_accuracy, cross_scores
 
 
 # Multi Layer Perceptron
@@ -220,13 +227,34 @@ def multi_layer_perceptron(x_train, x_test, y_train, y_test, momentum, learning_
                         learning_rate='constant', learning_rate_init=learning_rate)
 
     # Train the model using the training sets
-    mlp.fit(x_train, y_train)
+    model = mlp.fit(x_train, y_train)
 
     # Predict the response for test dataset
     y_pred = mlp.predict(x_test)
 
-    # returns model Accuracy, how often is the classifier correct?
-    return metrics.accuracy_score(y_test, y_pred)
+    # model Accuracy, how often is the classifier correct?
+    accuracy = metrics.accuracy_score(y_test, y_pred)
+
+    # Makes cross validation
+    cross_scores, cross_prediction, cross_accuracy = cross_validation(model, x_train, y_train, 10)
+
+    # return info
+    return accuracy, cross_accuracy, cross_scores
+
+
+# cross validation
+def cross_validation(model, X, y, k):
+
+    # Perform k-fold cross validation
+    scores = cross_val_score(model, X, y, cv=k)
+
+    # Make cross validated predictions
+    predictions = cross_val_predict(model, X, y, cv=k)
+
+    # cross validation accuracy
+    accuracy = metrics.accuracy_score(y, predictions)
+
+    return scores, predictions, accuracy
 
 
 # Class to open txt file with GUI
@@ -606,14 +634,18 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Results of the Naive Bayes Classifier\n\n')
 
         # get accuracy of the original training set
-        acc1 = naive_bayes(x_train_original, x_test, y_train_original, y_test)
+        acc, cross_acc, cross_scores = naive_bayes(x_train_original, x_test, y_train_original, y_test)
         self.parent.output.insert(INSERT, 'Original dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc1) + '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
 
         # get accuracy of the softened training set
-        acc2 = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
+        acc, cross_acc, cross_scores = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc2) + '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
 
     # Multi Layer Perceptron classifier
     def mlp_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften, x_test, y_test):
@@ -634,16 +666,22 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Results of the Multi-layer Perceptron Classifier\n\n')
 
         # get accuracy of the original training set
-        acc1 = multi_layer_perceptron(x_train_original, x_test, y_train_original, y_test, momentum, learning_rate,
-                                      size_original, num_of_attr, num_of_classes)
+        acc, cross_acc, cross_scores = multi_layer_perceptron(x_train_original, x_test, y_train_original, y_test,
+                                                              momentum, learning_rate, size_original,
+                                                              num_of_attr, num_of_classes)
         self.parent.output.insert(INSERT, 'Original dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc1) + '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
 
         # get accuracy of the softened training set
-        acc2 = multi_layer_perceptron(x_train_soften, x_test, y_train_soften, y_test, momentum, learning_rate,
-                                      size_softened, num_of_attr, num_of_classes)
+        acc, cross_acc, cross_scores = multi_layer_perceptron(x_train_soften, x_test, y_train_soften, y_test,
+                                                              momentum, learning_rate, size_softened,
+                                                              num_of_attr, num_of_classes)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy: ' + str(acc2) + '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
 
     # GETTERS AND SETTERS
     # ------------------------------------------------------------------------
