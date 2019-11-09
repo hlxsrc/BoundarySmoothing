@@ -321,30 +321,40 @@ class GUI(Frame):
         Label(self.parent, text=" ").grid(row=2)
 
         # Smoothing Labels
-        Label(self.parent, text="Smoothing:").grid(row=3)
+        Label(self.parent, text="Training and Test:").grid(row=3)
 
         # Smoothing Button
-        Button(self.parent, text='Smooth Boundary', width=17,
-               command=self.exec_knn).grid(row=4, column=1, sticky=W, pady=4)
+        Button(self.parent, text='Create', width=17,
+               command=self.create_train_test_partition).grid(row=4, column=1, sticky=W, pady=4)
 
         # Separator
         Label(self.parent, text=" ").grid(row=5)
 
+        # Smoothing Labels
+        Label(self.parent, text="Smoothing:").grid(row=6)
+
+        # Smoothing Button
+        Button(self.parent, text='Smooth Boundary', width=17,
+               command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
+
+        # Separator
+        Label(self.parent, text=" ").grid(row=8)
+
         # Classification Label
-        Label(self.parent, text="Classifier:").grid(row=6)
+        Label(self.parent, text="Classifier:").grid(row=9)
 
         # Initialize Tkinter variable for Radiobutton
         self.parent.v = IntVar()
 
         # Classifiers' radiobutton
         Radiobutton(self.parent, text="Naive Bayes", padx=20, variable=self.parent.v, value=1)\
-            .grid(row=7, column=1, sticky=W, pady=4)
+            .grid(row=10, column=1, sticky=W, pady=4)
         Radiobutton(self.parent, text="ANN", padx=20, variable=self.parent.v, value=2)\
-            .grid(row=8, column=1, sticky=W, pady=4)
+            .grid(row=11, column=1, sticky=W, pady=4)
 
         # Classify Button
         Button(self.parent, text='Classify', width=17,
-               command=self.radio_choice).grid(row=9, column=1, sticky=W+E+N+S, pady=4)
+               command=self.radio_choice).grid(row=12, column=1, sticky=W+E+N+S, pady=4)
 
     # Function to open a file using File Dialog
     def open_file(self):
@@ -389,51 +399,47 @@ class GUI(Frame):
         self.set_num_classes(classes)
         self.set_dataset_size(size)
 
-        self.create_train_test_partition()
-
     # Create test partition for classifiers with size 1/4 from original size of dataset
     def create_train_test_partition(self):
+        try:
+            # Get original dataset
+            dataset = self.parent.dataset
 
-        # Get original dataset
-        dataset = self.parent.dataset
-        # Takes out the first three rows
-        dataset.pop(0)
-        dataset.pop(0)
-        dataset.pop(0)
+            # arrays waiting for data
+            data = []
+            target = []
+            data_np = []
+            for row in dataset[3:]:
+                # data columns from string to numpy array
+                np_row = np.fromstring(row, float, int(self.get_num_attr()), ',')
+                data.append(np_row)
+                # label column from string to array (int)
+                string = row.split(',')
+                target.append(int(string[int(self.get_num_attr())]))
+                # original data set from string to data
+                new_row = np.fromstring(row, float, int(self.get_num_attr())+1, ',')
+                data_np.append(new_row)
 
-        # arrays waiting for data
-        data = []
-        target = []
-        data_np = []
-        for row in dataset:
-            # data columns from string to numpy array
-            np_row = np.fromstring(row, float, int(self.get_num_attr()), ',')
-            data.append(np_row)
-            # label column from string to array (int)
-            string = row.split(',')
-            target.append(int(string[int(self.get_num_attr())]))
-            # original data set from string to data
-            new_row = np.fromstring(row, float, int(self.get_num_attr())+1, ',')
-            data_np.append(new_row)
+            # Split dataset into training set and test set
+            x_train, x_test, y_train, y_test = train_test_split(np.asarray(data), target, test_size=0.25)
 
-        # Split dataset into training set and test set
-        x_train, x_test, y_train, y_test = train_test_split(np.asarray(data), target, test_size=0.25, random_state=109)
+            self.set_train_set(x_train, y_train)
+            self.set_x_train(x_train)
+            self.set_y_train(y_train)
+            self.set_test_set(x_test, y_test)
+            self.set_x_test(x_test)
+            self.set_y_test(y_test)
 
-        self.set_train_set(x_train, y_train)
-        self.set_x_train(x_train)
-        self.set_y_train(y_train)
-        self.set_test_set(x_test, y_test)
-        self.set_x_test(x_test)
-        self.set_y_test(y_test)
+            self.set_train_set_size(len(x_train))
+            self.set_dataset_np(np.asarray(data_np))
 
-        self.set_train_set_size(len(x_train))
-        self.set_dataset_np(np.asarray(data_np))
+            self.parent.output.insert(INSERT, 'Test partition created.\n\n')
+            self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
+            self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
 
-        self.parent.output.insert(INSERT, 'Test partition created.\n\n')
-        self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
-        self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
-
-        self.change_to_arff(self.get_test_set(), FALSE, FALSE)
+            self.change_to_arff(self.get_test_set(), FALSE, FALSE)
+        except AttributeError:
+            messagebox.showerror('Error', 'There is no data to split into training set and test set')
 
     # Function to save a file
     def save_file(self):
@@ -498,7 +504,14 @@ class GUI(Frame):
         for i in range(int(num)):
             attribute = '@ATTRIBUTE ' + str(i) + ' REAL' + '\n'
             f.write(attribute)
-        f.write('\n')
+
+        string = ''
+        classes = self.get_num_classes()
+        for i in range(int(classes)-1):
+            string += str(i) + ','
+        string = string + str(int(classes)-1)
+        attr_class = '@ATTRIBUTE class {' + string + '}\n\n'
+        f.write(attr_class)
 
         # Get and write DATA to file
         if flag_write:
