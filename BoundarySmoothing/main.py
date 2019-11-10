@@ -692,16 +692,14 @@ class GUI(Frame):
         # get accuracy of the original training set
         acc, cross_acc, cross_mean = naive_bayes(x_train_original, x_test, y_train_original, y_test, cv)
         self.parent.output.insert(INSERT, 'Original dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
-                                  '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: %0.2f\n' % acc)
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: %0.2f (+/- %0.2f)\n\n' % (cross_acc, cross_mean))
 
         # get accuracy of the softened training set
         acc, cross_acc, cross_mean = naive_bayes(x_train_soften, x_test, y_train_soften, y_test, cv)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
-                                  '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: %0.2f\n' % acc)
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: %0.2f (+/- %0.2f)\n\n' % (cross_acc, cross_mean))
 
     # Multi Layer Perceptron classifier
     def mlp_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften, x_test, y_test):
@@ -727,18 +725,16 @@ class GUI(Frame):
                                                               momentum, learning_rate, size_original,
                                                               num_of_attr, num_of_classes, cv)
         self.parent.output.insert(INSERT, 'Original dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
-                                  '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: %0.2f\n' % acc)
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: %0.2f (+/- %0.2f)\n\n' % (cross_acc, cross_mean))
 
         # get accuracy of the softened training set
         acc, cross_acc, cross_mean = multi_layer_perceptron(x_train_soften, x_test, y_train_soften, y_test,
                                                               momentum, learning_rate, size_softened,
                                                               num_of_attr, num_of_classes, cv)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
-        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
-                                  '\n\n')
+        self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: %0.2f\n' % acc)
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: %0.2f (+/- %0.2f)\n\n' % (cross_acc, cross_mean))
 
     # GETTERS AND SETTERS
     # ------------------------------------------------------------------------
