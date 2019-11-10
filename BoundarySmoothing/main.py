@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split  # Import train_test_split function
 from sklearn.naive_bayes import GaussianNB  # Import Gaussian Naive Bayes model
+from sklearn.naive_bayes import MultinomialNB  # Import Gaussian Naive Bayes model
 from sklearn.neural_network import MLPClassifier  # Import Neural Network model
 from sklearn.model_selection import cross_val_score, cross_val_predict  # Import cross validation
 from sklearn.preprocessing import StandardScaler  # Import Standar Scaler
@@ -128,14 +129,13 @@ def plot(self, data, attr1, attr2, string, flag):
 
 
 # executes the knn algorithm in order to soften the decision boundary
-def knn(self, dataset, attr1, attr2, num_neighbors):
+def knn(self, dataset, num_neighbors):
 
     # Create new object
     nn = KNN()
 
-    # store configuration values
+    # store attributes
     attr = self.get_num_attr()
-    classes = self.get_num_classes()
 
     # list representing the data after the boundary smoothing
     after_boundary_smoothing = []
@@ -174,15 +174,12 @@ def knn(self, dataset, attr1, attr2, num_neighbors):
         # else:
         #     excluded_data.append(row)
 
-    # plot after boundary smoothing
-    plot(self, after_boundary_smoothing, attr1, attr2, 'Train after boundary smoothing', TRUE)
-
     # returns data after boundary smoothing so it can be written to a new file
     return after_boundary_smoothing, excluded_data
 
 
 # naive bayes
-def naive_bayes(x_train, x_test, y_train, y_test):
+def naive_bayes(x_train, x_test, y_train, y_test, cv):
     # Create a Gaussian Classifier
     gnb = GaussianNB()
 
@@ -192,19 +189,19 @@ def naive_bayes(x_train, x_test, y_train, y_test):
     # Predict the response for test dataset
     y_pred = gnb.predict(x_test)
 
-    # Makes cross validation
-    cross_scores, cross_prediction, cross_accuracy = cross_validation(model, x_train, y_train, 10)
-
     # model Accuracy, how often is the classifier correct?
     accuracy = metrics.accuracy_score(y_test, y_pred)
 
+    # Makes cross validation
+    cross_accuracy, cross_mean = cross_validation(model, x_train, y_train, cv)
+
     # returns info
-    return accuracy, cross_accuracy, cross_scores
+    return accuracy, cross_accuracy, cross_mean
 
 
 # Multi Layer Perceptron
 def multi_layer_perceptron(x_train, x_test, y_train, y_test, momentum, learning_rate,
-                           dataset_size, num_of_attr, num_of_classes):
+                           dataset_size, num_of_attr, num_of_classes, cv):
 
     # Get number of neurons in the hidden layer with formula Nh = Ns / (a * (Ni + No))
     # Not this one because takes dataset size as a parameter
@@ -236,10 +233,10 @@ def multi_layer_perceptron(x_train, x_test, y_train, y_test, momentum, learning_
     accuracy = metrics.accuracy_score(y_test, y_pred)
 
     # Makes cross validation
-    cross_scores, cross_prediction, cross_accuracy = cross_validation(model, x_train, y_train, 10)
+    cross_accuracy, cross_mean = cross_validation(model, x_train, y_train, cv)
 
     # return info
-    return accuracy, cross_accuracy, cross_scores
+    return accuracy, cross_accuracy, cross_mean
 
 
 # cross validation
@@ -249,12 +246,13 @@ def cross_validation(model, X, y, k):
     scores = cross_val_score(model, X, y, cv=k)
 
     # Make cross validated predictions
-    predictions = cross_val_predict(model, X, y, cv=k)
+    # predictions = cross_val_predict(model, X, y, cv=k)
 
     # cross validation accuracy
-    accuracy = metrics.accuracy_score(y, predictions)
+    accuracy = scores.mean()
+    mean = scores.std() * 2
 
-    return scores, predictions, accuracy
+    return accuracy, mean
 
 
 # Class to open txt file with GUI
@@ -310,22 +308,22 @@ class GUI(Frame):
         scroll_b.grid(row=0, column=3, rowspan=16, sticky=W+E+N+S)
         self.parent.output['yscrollcommand'] = scroll_b.set
 
-        # Plot Labels
-        Label(self.parent, text="Plot: ").grid(row=0)
+        # Smoothing Labels
+        Label(self.parent, text="Training and Test:").grid(row=0)
 
-        # Plot Button
-        Button(self.parent, text='Show graphic', width=17,
-               command=self.plot).grid(row=1, column=1, sticky=W, pady=4)
+        # Smoothing Button
+        Button(self.parent, text='Create', width=17,
+               command=self.create_train_test_partition).grid(row=1, column=1, sticky=W, pady=4)
 
         # Separator
         Label(self.parent, text=" ").grid(row=2)
 
-        # Smoothing Labels
-        Label(self.parent, text="Training and Test:").grid(row=3)
+        # Plot Labels
+        Label(self.parent, text="Plot: ").grid(row=3)
 
-        # Smoothing Button
-        Button(self.parent, text='Create', width=17,
-               command=self.create_train_test_partition).grid(row=4, column=1, sticky=W, pady=4)
+        # Plot Button
+        Button(self.parent, text='Show graphic', width=17,
+               command=self.plot).grid(row=4, column=1, sticky=W, pady=4)
 
         # Separator
         Label(self.parent, text=" ").grid(row=5)
@@ -337,20 +335,24 @@ class GUI(Frame):
         Button(self.parent, text='Smooth Boundary', width=17,
                command=self.exec_knn).grid(row=7, column=1, sticky=W, pady=4)
 
+        # Plot Smoothing Button
+        Button(self.parent, text='Plot', width=17,
+               command=self.plot_knn).grid(row=8, column=1, sticky=W, pady=4)
+
         # Separator
-        Label(self.parent, text=" ").grid(row=8)
+        Label(self.parent, text=" ").grid(row=9)
 
         # Classification Label
-        Label(self.parent, text="Classifier:").grid(row=9)
+        Label(self.parent, text="Classifier:").grid(row=10)
 
         # Initialize Tkinter variable for Radiobutton
         self.parent.v = IntVar()
 
         # Classifiers' radiobutton
-        Radiobutton(self.parent, text="Naive Bayes", padx=20, variable=self.parent.v, value=1)\
-            .grid(row=10, column=1, sticky=W, pady=4)
-        Radiobutton(self.parent, text="ANN", padx=20, variable=self.parent.v, value=2)\
-            .grid(row=11, column=1, sticky=W, pady=4)
+        Radiobutton(self.parent, text="Naive Bayes", padx=2, variable=self.parent.v, value=1)\
+            .grid(row=10, column=1, sticky=W, )
+        Radiobutton(self.parent, text="MLP", padx=2, variable=self.parent.v, value=2)\
+            .grid(row=11, column=1, sticky=W)
 
         # Classify Button
         Button(self.parent, text='Classify', width=17,
@@ -437,14 +439,17 @@ class GUI(Frame):
             self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
             self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
 
-            self.change_to_arff(self.get_test_set(), FALSE, FALSE)
+            # Write files
+            self.change_to_arff(self.get_train_set(), FALSE, FALSE, 1)
+            self.change_to_arff(self.get_test_set(), FALSE, FALSE, 2)
+            self.parent.output.insert(INSERT, 'Training and test files created\n\n')
         except AttributeError:
             messagebox.showerror('Error', 'There is no data to split into training set and test set')
 
     # Function to save a file
     def save_file(self):
         try:
-            self.change_to_arff(self.parent.new_train_set, TRUE, FALSE)
+            self.change_to_arff(self.parent.new_train_set, TRUE, FALSE, 0)
         except AttributeError:
             messagebox.showerror("Error", "There is nothing to save")
 
@@ -473,18 +478,19 @@ class GUI(Frame):
             data.pop(0)
             data.pop(0)
             data.pop(0)
-            self.change_to_arff(data, TRUE, TRUE)
+            self.change_to_arff(data, TRUE, TRUE, 0)
         except AttributeError:
             messagebox.showerror("Error", "There is nothing to save")
 
     # txt file to arff file using filedialog
-    def change_to_arff(self, dataset, flag_ask, flag_write):
+    def change_to_arff(self, dataset, flag_ask, flag_write, flag_name):
 
         # get file name
         path = self.get_file_name()
         path_arr = path.split('/')
         name_arr = path_arr[len(path_arr) - 1].split('.')
         name = name_arr[0]
+        new_string = ''
 
         if flag_ask:
             # Open file to write in it
@@ -492,7 +498,13 @@ class GUI(Frame):
             if f is None:  # return `None` if dialog closed with "cancel".
                 return
         else:
-            new_string = 'data/' + name + '_test.arff'
+            if flag_name == 1:
+                new_string = 'data/' + name + '_training.arff'
+            if flag_name == 2:
+                new_string = 'data/' + name + '_test.arff'
+            if flag_name == 3:
+                new_string = 'data/' + name + '_softened.arff'
+
             f = open(new_string, 'w+')
 
         # Get and write RELATION to file
@@ -558,14 +570,12 @@ class GUI(Frame):
 
             # Get input
             num_neighbors = simpledialog.askinteger('Smoothing', 'Number of K neighbors', minvalue=0)
-            attr1 = simpledialog.askinteger('Smoothing', 'First attribute to plot', minvalue=0)
-            attr2 = simpledialog.askinteger('Smoothing', 'Second attribute to plot', minvalue=0)
 
             # Gives info to users
             self.parent.output.insert(INSERT, 'Smoothing...\n\n')
 
             # Execute knn
-            new_data, excluded_data = knn(self, data, attr1, attr2, num_neighbors)
+            new_data, excluded_data = knn(self, data, num_neighbors)
 
             # Set parameters
             if new_data != 0:
@@ -581,7 +591,7 @@ class GUI(Frame):
             # reformat training set after boundary smoothing process
             x_train_soften = []
             y_train_soften = []
-            train_soften = np.asarray(data)
+            train_soften = np.asarray(new_data)
             for row in train_soften:
                 # change to numpy array
                 x_train_soften.append(np.delete(row, int(self.get_num_attr())))
@@ -591,6 +601,9 @@ class GUI(Frame):
             # set training set after boundary smoothing process
             self.set_x_train_soft(np.asarray(x_train_soften))
             self.set_y_train_soft(y_train_soften)
+
+            # save to file
+            self.change_to_arff(new_data, FALSE, FALSE, 3)
 
         # handle exceptions
         except UnboundLocalError:
@@ -610,6 +623,17 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, '\nNew size of dataset: ' + str(self.get_new_train_set_size()) + '\n')
         excluded_data = int(self.get_train_set_size()) - int(self.get_new_train_set_size())
         self.parent.output.insert(INSERT, 'Excluded data: ' + str(excluded_data) + '\n\n')
+
+    def plot_knn(self):
+        # get input
+        attr1 = simpledialog.askinteger('Smoothing', 'First attribute to plot', minvalue=0)
+        attr2 = simpledialog.askinteger('Smoothing', 'Second attribute to plot', minvalue=0)
+
+        # get data
+        data = self.get_new_train_set()
+
+        # plot after boundary smoothing
+        plot(self, data, attr1, attr2, 'Train after boundary smoothing', TRUE)
 
     # Get choice from radio button and executes a classifier
     def radio_choice(self):
@@ -632,6 +656,7 @@ class GUI(Frame):
             if choice == 1:
                 self.naive_bayes_classifier(x_train_original, y_train_original, x_train_soften, y_train_soften,
                                             x_test, y_test)
+
             if choice == 2:
                 self.mlp_classifier(x_train_original, y_train_original, x_train_soften, y_train_soften,
                                     x_test, y_test)
@@ -642,23 +667,25 @@ class GUI(Frame):
     # Naive bayes classifier
     def naive_bayes_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften,
                                x_test, y_test):
+        # cross validation
+        cv = simpledialog.askinteger('Naive Bayes', 'Cross Validation', minvalue=0)
 
         # Show results of the naive bayes classifier
         self.parent.output.insert(INSERT, 'Results of the Naive Bayes Classifier\n\n')
 
         # get accuracy of the original training set
-        acc, cross_acc, cross_scores = naive_bayes(x_train_original, x_test, y_train_original, y_test)
+        acc, cross_acc, cross_mean = naive_bayes(x_train_original, x_test, y_train_original, y_test, cv)
         self.parent.output.insert(INSERT, 'Original dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
+                                  '\n\n')
 
         # get accuracy of the softened training set
-        acc, cross_acc, cross_scores = naive_bayes(x_train_soften, x_test, y_train_soften, y_test)
+        acc, cross_acc, cross_mean = naive_bayes(x_train_soften, x_test, y_train_soften, y_test, cv)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
+                                  '\n\n')
 
     # Multi Layer Perceptron classifier
     def mlp_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften, x_test, y_test):
@@ -666,6 +693,7 @@ class GUI(Frame):
         # Get input
         momentum = simpledialog.askfloat('Multi-layer Perceptron', 'Momentum', minvalue=0)
         learning_rate = simpledialog.askfloat('Multi-layer Perceptron', 'Learning rate', minvalue=0)
+        cv = simpledialog.askinteger('Multi-layer Perceptron', 'Cross Validation', minvalue=0)
 
         # Get number of attributes and number of classes
         num_of_attr = self.get_num_attr()
@@ -679,22 +707,22 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Results of the Multi-layer Perceptron Classifier\n\n')
 
         # get accuracy of the original training set
-        acc, cross_acc, cross_scores = multi_layer_perceptron(x_train_original, x_test, y_train_original, y_test,
+        acc, cross_acc, cross_mean = multi_layer_perceptron(x_train_original, x_test, y_train_original, y_test,
                                                               momentum, learning_rate, size_original,
-                                                              num_of_attr, num_of_classes)
+                                                              num_of_attr, num_of_classes, cv)
         self.parent.output.insert(INSERT, 'Original dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
+                                  '\n\n')
 
         # get accuracy of the softened training set
-        acc, cross_acc, cross_scores = multi_layer_perceptron(x_train_soften, x_test, y_train_soften, y_test,
+        acc, cross_acc, cross_mean = multi_layer_perceptron(x_train_soften, x_test, y_train_soften, y_test,
                                                               momentum, learning_rate, size_softened,
-                                                              num_of_attr, num_of_classes)
+                                                              num_of_attr, num_of_classes, cv)
         self.parent.output.insert(INSERT, 'Soften dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: ' + str(acc) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Scores: ' + str(cross_scores) + '\n')
-        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + '\n\n')
+        self.parent.output.insert(INSERT, 'Cross Validated Accuracy: ' + str(cross_acc) + ' (+/-) ' + str(cross_mean) +
+                                  '\n\n')
 
     # GETTERS AND SETTERS
     # ------------------------------------------------------------------------
@@ -761,7 +789,7 @@ class GUI(Frame):
         train = []
         # for each row on x_train add y_train[i] value at the end
         for i, row in enumerate(x_train):
-            new_row = np.append(row,y_train[i])
+            new_row = np.append(row, y_train[i])
             train.append(new_row)
 
         self.parent.train = np.asarray(train)
