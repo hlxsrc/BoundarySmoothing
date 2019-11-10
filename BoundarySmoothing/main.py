@@ -367,12 +367,15 @@ class GUI(Frame):
             fl = dlg.show()
 
             if fl != '':
+                # set file name
                 self.set_file_name(self, fl)
+                # read file
                 data = read_file(self.parent.file_name)
+                # set data
                 self.set_dataset(data)
-                self.file_loaded()
                 # File loaded
                 self.parent.output.insert(INSERT, 'File loaded... \n\n')
+                self.file_loaded()
         except AttributeError:
             # File loaded
             self.parent.output.insert(INSERT, 'File not loaded... \n\n')
@@ -435,9 +438,16 @@ class GUI(Frame):
             self.set_train_set_size(len(x_train))
             self.set_dataset_np(np.asarray(data_np))
 
-            self.parent.output.insert(INSERT, 'Test partition created.\n\n')
+            self.parent.output.insert(INSERT, 'Train and test partition created.\n\n')
             self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
             self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
+
+            # count occurrences
+            self.parent.output.insert(INSERT, 'Number of items per class: \n\n')
+            for i in range(int(self.get_num_classes())):
+                self.parent.output.insert(INSERT, 'Class ' + str(i) + ': ' + str(y_train.count(i)) + '\n')
+
+            self.parent.output.insert(INSERT, '\n')
 
             # Write files
             self.change_to_arff(self.get_train_set(), FALSE, FALSE, 1)
@@ -605,6 +615,12 @@ class GUI(Frame):
             # save to file
             self.change_to_arff(new_data, FALSE, FALSE, 3)
 
+            # count occurrences
+            self.parent.output.insert(INSERT, 'Number of items per class: \n\n')
+            for i in range(int(self.get_num_classes())):
+                self.parent.output.insert(INSERT, 'Class ' + str(i) + ': ' + str(y_train_soften.count(i)) + '\n')
+            self.parent.output.insert(INSERT, '\n')
+
         # handle exceptions
         except UnboundLocalError:
             messagebox.showinfo('Info', 'Add a file in File > Open')
@@ -668,7 +684,7 @@ class GUI(Frame):
     def naive_bayes_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften,
                                x_test, y_test):
         # cross validation
-        cv = simpledialog.askinteger('Naive Bayes', 'Cross Validation', minvalue=0)
+        cv = simpledialog.askinteger('Naive Bayes', 'Cross Validation', minvalue=2)
 
         # Show results of the naive bayes classifier
         self.parent.output.insert(INSERT, 'Results of the Naive Bayes Classifier\n\n')
@@ -693,7 +709,7 @@ class GUI(Frame):
         # Get input
         momentum = simpledialog.askfloat('Multi-layer Perceptron', 'Momentum', minvalue=0)
         learning_rate = simpledialog.askfloat('Multi-layer Perceptron', 'Learning rate', minvalue=0)
-        cv = simpledialog.askinteger('Multi-layer Perceptron', 'Cross Validation', minvalue=0)
+        cv = simpledialog.askinteger('Multi-layer Perceptron', 'Cross Validation', minvalue=2)
 
         # Get number of attributes and number of classes
         num_of_attr = self.get_num_attr()
