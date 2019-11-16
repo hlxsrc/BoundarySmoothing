@@ -61,7 +61,7 @@ def majority(neighbors, attr):
     # takes the class from the nearest k neighbors
     knn_classes = []
     for neighbor in neighbors:
-        knn_classes.append(neighbor[int(attr)])
+        knn_classes.append(neighbor[attr])
 
     # print("NEIGHBORS: ", knn_classes)
     result = most_frequent(knn_classes)
@@ -135,7 +135,7 @@ def knn(self, dataset, num_neighbors):
     nn = KNN()
 
     # store attributes
-    attr = self.get_num_attr()
+    attr = int(self.get_num_attr())
 
     # list representing the data after the boundary smoothing
     after_boundary_smoothing = []
@@ -148,18 +148,30 @@ def knn(self, dataset, num_neighbors):
     # the row will be added to a new list
     # else the row will be excluded from the new list
     # this new list is going to represent the data after the softening of the decision boundary
-    for row in dataset:
+    for i, row in enumerate(dataset):
+
+        # deletes row from dataset so it does not find itself
+        aux_dataset = dataset
+        aux_dataset = np.delete(aux_dataset, i, axis=0)
 
         # predict the label
-        neighbors = nn.predict_classification(dataset, row, int(num_neighbors))
+        neighbors = nn.predict_classification(aux_dataset, row, int(num_neighbors))
 
-        # 1. Takes the majority of the neighbors
-        prediction = majority(neighbors, attr)
+        if int(num_neighbors) == 1:
+            # 1.1
+            if int(neighbors[0][attr]) == int(row[attr]):
+                after_boundary_smoothing.append(row)
+            else:
+                excluded_data.append(row)
 
-        if int(prediction) == int(row[int(attr)]):
-            after_boundary_smoothing.append(row)
         else:
-            excluded_data.append(row)
+            # 1.2 Takes the majority of the neighbors
+            prediction = majority(neighbors, attr)
+
+            if int(prediction) == int(row[attr]):
+                after_boundary_smoothing.append(row)
+            else:
+                excluded_data.append(row)
 
         # 2. All neighbors must have the same class
         # takes the class from the nearest k neighbors
