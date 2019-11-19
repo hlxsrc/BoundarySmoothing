@@ -238,6 +238,8 @@ def multi_layer_perceptron(x_train, x_test, y_train, y_test, momentum, learning_
     # Train the model using the training sets
     model = mlp.fit(x_train, y_train)
 
+    print(model)
+
     # Predict the response for test dataset
     y_pred = mlp.predict(x_test)
 
@@ -450,6 +452,14 @@ class GUI(Frame):
             self.set_train_set_size(len(x_train))
             self.set_dataset_np(np.asarray(data_np))
 
+            # count occurrences
+            self.parent.output.insert(INSERT, 'Number of items per class: \n\n')
+            for i in range(int(self.get_num_classes())):
+                self.parent.output.insert(INSERT, 'Class ' + str(i) + ': ' + str(target.count(i)) + '\n')
+
+            self.parent.output.insert(INSERT, '\n')
+            self.parent.output.insert(INSERT, '---------------------------------------------------------------------\n')
+
             self.parent.output.insert(INSERT, 'Train and test partition created.\n\n')
             self.parent.output.insert(INSERT, 'Size of train set: ' + str(len(x_train)) + '.\n')
             self.parent.output.insert(INSERT, 'Size of test set: ' + str(len(x_test)) + '.\n\n')
@@ -465,6 +475,8 @@ class GUI(Frame):
             self.change_to_arff(self.get_train_set(), FALSE, FALSE, 1)
             self.change_to_arff(self.get_test_set(), FALSE, FALSE, 2)
             self.parent.output.insert(INSERT, 'Training and test files created\n\n')
+            self.parent.output.insert(INSERT, '---------------------------------------------------------------------\n')
+
         except AttributeError:
             messagebox.showerror('Error', 'There is no data to split into training set and test set')
 
@@ -632,6 +644,7 @@ class GUI(Frame):
             for i in range(int(self.get_num_classes())):
                 self.parent.output.insert(INSERT, 'Class ' + str(i) + ': ' + str(y_train_soften.count(i)) + '\n')
             self.parent.output.insert(INSERT, '\n')
+            self.parent.output.insert(INSERT, '---------------------------------------------------------------------\n')
 
         # handle exceptions
         except UnboundLocalError:
@@ -713,6 +726,8 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: %0.2f\n' % acc)
         self.parent.output.insert(INSERT, 'Cross Validated Accuracy: %0.2f (+/- %0.2f)\n\n' % (cross_acc, cross_mean))
 
+        self.parent.output.insert(INSERT, '---------------------------------------------------------------------\n')
+
     # Multi Layer Perceptron classifier
     def mlp_classifier(self, x_train_original, y_train_original, x_train_soften, y_train_soften, x_test, y_test):
 
@@ -747,6 +762,8 @@ class GUI(Frame):
         self.parent.output.insert(INSERT, 'Soften dataset\n')
         self.parent.output.insert(INSERT, 'Accuracy with automatically generated test set: %0.2f\n' % acc)
         self.parent.output.insert(INSERT, 'Cross Validated Accuracy: %0.2f (+/- %0.2f)\n\n' % (cross_acc, cross_mean))
+
+        self.parent.output.insert(INSERT, '---------------------------------------------------------------------\n')
 
     # GETTERS AND SETTERS
     # ------------------------------------------------------------------------
